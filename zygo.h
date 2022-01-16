@@ -28,12 +28,16 @@ struct Elem {
 	char *selector;
 	char *server;
 	char *port;
+	size_t id; /* only set when:
+		    * - type != 'i'
+		    * - in a list */
 };
 
 typedef struct List List;
 struct List {
 	struct Elem **elems;
 	size_t len;
+	size_t lastid;
 };
 
 typedef struct Scheme Scheme;
@@ -54,7 +58,8 @@ enum {
 	PAIR_CMD = 3,
 	PAIR_ARG = 4,
 	PAIR_ERR = 5,
-	PAIR_SCHEME = 6,
+	PAIR_EID = 6,
+	PAIR_SCHEME = 7,
 };
 
 extern List *history;
@@ -80,6 +85,7 @@ char *elemtouri(Elem *e);
 void list_free(List **l);
 void list_append(List **l, Elem *e);
 Elem *list_get(List **l, size_t elem);
+Elem *list_idget(List **l, size_t id);
 size_t list_len(List **l);
 
 

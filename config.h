@@ -5,6 +5,7 @@ static short uri_pair[2] = {0,   7};
 static short cmd_pair[2] = {7,   0};
 static short arg_pair[2] = {-1,  0};
 static short err_pair[2] = {160, 0};
+static short eid_pair[2] = {4,   -1};
 
 static int stimeout = 5;
 

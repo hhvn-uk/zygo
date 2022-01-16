@@ -26,6 +26,7 @@
 #include <locale.h>
 #include <signal.h>
 #include <unistd.h>
+#include <ctype.h>
 #include <stdio.h>
 #include "zygo.h"
 #include "config.h"
@@ -41,7 +42,9 @@ int config[] = {
 
 struct {
 	int scroll;
-	int wantinput;
+	int wantinput; /* 0 - no
+			* 1 - yes (with cmd)
+			* 2 - yes (id) */
 	wint_t input[BUFLEN];
 	char cmd;
 	char *arg;
@@ -318,24 +321,31 @@ list_free(List **l) {
 
 void
 list_append(List **l, Elem *e) {
+	Elem *elem;
+
 	zygo_assert(l);
 
 	if (!(*l)) {
 		(*l) = emalloc(sizeof(List));
 		(*l)->len = 0;
+		(*l)->lastid = 0;
 		(*l)->elems = NULL;
 	}
+
+	elem = elem_dup(e);
+	if (elem->type != 'i')
+		elem->id = ++(*l)->lastid;
 
 	if (!(*l)->elems) {
 		(*l)->len = 1;
 		(*l)->elems = emalloc(sizeof(Elem *) * (*l)->len);
-		*(*l)->elems = elem_dup(e);
+		*(*l)->elems = elem;
 		return;
 	}
 
 	(*l)->len++;
 	(*l)->elems = erealloc((*l)->elems, sizeof(Elem *) * (*l)->len);
-	*((*l)->elems + (*l)->len - 1) = elem_dup(e);
+	*((*l)->elems + (*l)->len - 1) = elem;
 }
 
 Elem *
@@ -345,6 +355,18 @@ list_get(List **l, size_t elem) {
 	return *((*l)->elems + elem);
 }
 
+Elem *
+list_idget(List **l, size_t id) {
+	int i;
+
+	if (!l || !(*l) || (*l)->len == 0 || id >= (*l)->len)
+		return NULL;
+	for (i = 0; i < (*l)->len; i++)
+		if ((*((*l)->elems + i))->id == id)
+			return *((*l)->elems + i);
+	return NULL;
+}
+
 size_t
 list_len(List **l) {
 	if (!l || !(*l))
@@ -352,6 +374,9 @@ list_len(List **l) {
 	return (*l)->len;
 }
 
+/*
+ * Misc functions
+ */
 int
 readline(char *buf, size_t count) {
 	size_t i = 0;
@@ -417,6 +442,18 @@ go(Elem *e) {
 	return 0;
 }
 
+int
+digits(int i) {
+	int ret = 0;
+
+	do {
+		ret++;
+		i /= 10;
+	} while (i != 0);
+
+	return ret;
+}
+
 /*
  * UI functions
  */
@@ -436,7 +473,7 @@ error(char *format, ...) {
 	addstr(" ");
 	refresh();
 	candraw = 0;
-	alarm(5);
+	alarm(stimeout);
 }
 
 Scheme *
@@ -452,6 +489,12 @@ int
 draw_line(Elem *e, int maxlines) {
 	int lc, cc;
 
+	attron(COLOR_PAIR(PAIR_EID));
+	if (e->type != 'i')
+		printw("% 3d ", e->id);
+	else
+		printw("    ");
+	attroff(A_COLOR);
 	printw("%s | ", getscheme(e->type)->name);
 	attron(COLOR_PAIR(getscheme(e->type)->pair));
 	printw("%s\n", e->desc);
@@ -493,8 +536,10 @@ draw_bar(void) {
 	printw(" ");
 	if (ui.wantinput) {
 		curs_set(1);
-		attron(COLOR_PAIR(PAIR_CMD));
-		printw("%c", ui.cmd);
+		if (ui.wantinput == 1) {
+			attron(COLOR_PAIR(PAIR_CMD));
+			printw("%c", ui.cmd);
+		}
 		attron(COLOR_PAIR(PAIR_ARG));
 		printw("%s", ui.arg);
 	} else curs_set(0);
@@ -539,7 +584,7 @@ run(void) {
 		if (c == KEY_RESIZE) {
 			draw_page();
 			draw_bar();
-		} else if (ui.wantinput) {
+		} else if (ui.wantinput == 1) {
 			if (c == 27 /* escape */) {
 				ui.wantinput = 0;
 			} else if (c == '\n') {
@@ -560,6 +605,29 @@ run(void) {
 					syncinput();
 				}
 			} else if (c >= 32 && c < KEY_CODE_YES) {
+				ui.input[il++] = c;
+				ui.input[il] = '\0';
+				syncinput();
+			}
+			draw_bar();
+		} else if (ui.wantinput == 2) {
+			if (c == 27 /* escape */) {
+				ui.wantinput = 0;
+			} else if (c == '\n' || il + 1 >= digits(page->lastid)) {
+				if (c != '\n') {
+					ui.input[il++] = c;
+					ui.input[il] = '\0';
+					syncinput();
+				}
+				goto gonum;
+			} else if (c == KEY_BACKSPACE || c == 127) {
+				if (il == 0) {
+					ui.wantinput = 0;
+				} else {
+					ui.input[--il] = '\0';
+					syncinput();
+				}
+			} else if (isdigit((int)c)) {
 				ui.input[il++] = c;
 				ui.input[il] = '\0';
 				syncinput();
@@ -598,10 +666,20 @@ run(void) {
 			case 'q':
 				endwin();
 				exit(EXIT_SUCCESS);
+			/* link numbers */
 			case '0': case '1': case '2': case '3': case '4':
 			case '5': case '6': case '7': case '8': case '9':
-				/* TODO: numbered link handling */
+				ui.wantinput = 2;
+				ui.input[0] = c;
+				ui.input[1] = '\0';
+				syncinput();
+				il = 1;
+				if (digits(page->lastid) == 1)
+					goto gonum;
+				draw_bar();
 				break;
+			/* commands without arg */
+			/* commands with arg */
 			case ':':
 				ui.cmd = (char)c;
 				ui.wantinput = 1;
@@ -619,6 +697,17 @@ run(void) {
 				break;
 			}
 		}
+
+		continue;
+
+gonum:
+		if (atoi(ui.arg) >= page->lastid || atoi(ui.arg) < 1)
+			error("no such link: %d", atoi(ui.arg));
+		else
+			go(list_idget(&page, atoi(ui.arg)));
+		ui.wantinput = 0;
+		draw_page();
+		draw_bar();
 	}
 }
 
@@ -667,6 +756,7 @@ main(int argc, char *argv[]) {
 	init_pair(PAIR_CMD, cmd_pair[0], cmd_pair[1]);
 	init_pair(PAIR_ARG, arg_pair[0], arg_pair[1]);
 	init_pair(PAIR_ERR, err_pair[0], err_pair[1]);
+	init_pair(PAIR_EID, eid_pair[0], eid_pair[1]);
 	for (i = 0; scheme[i].type; i++) {
 		scheme[i].pair = i + PAIR_SCHEME;
 		init_pair(scheme[i].pair, scheme[i].fg, -1);
