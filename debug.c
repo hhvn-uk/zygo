@@ -34,3 +34,11 @@ elem_put(Elem *e) {
 	fprintf(stderr, "Port: %s\n", e->port);
 	debug_end();
 }
+
+void *
+list_put(List **l) {
+	size_t i;
+
+	for (i = 0; i < list_len(l); i++)
+		elem_put(list_get(l, i));
+}

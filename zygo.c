@@ -41,6 +41,9 @@ error(char *format, ...) {
 	va_end(ap);
 }
 
+/*
+ * Memory functions
+ */
 void *
 emalloc(size_t size) {
 	void *mem;
@@ -86,6 +89,9 @@ estrappend(char **s1, const char *s2) {
 	snprintf(*s1 + strlen(*s1), len - strlen(s2), "%s", s2);
 }
 
+/*
+ * Elem functions
+ */
 void
 elem_free(Elem *e) {
 	if (e) {
@@ -101,7 +107,7 @@ Elem *
 elem_create(char type, char *desc, char *selector, char *server, char *port) {
 	Elem *ret;
 
-#define DUP(str) str ? NULL : estrdup(str)
+#define DUP(str) str ? estrdup(str) : NULL
 	ret = emalloc(sizeof(Elem));
 	ret->type = type;
 	ret->desc = DUP(desc);
@@ -230,9 +236,7 @@ uritoelem(const char *uri) {
 	ret->port     = ret->port     ? ret->port     : estrdup("70");
 	ret->selector = ret->selector ? ret->selector : estrdup(tmp);
 
-#ifdef DEBUG
 	elem_put(ret);
-#endif /* DEBUG */
 
 end:
 	free(dup);
@@ -277,11 +281,63 @@ invalid:
 	free(ret->server);
 	free(ret->port);
 	ret->type = '3';
-	ret->desc = strdup("invalid gopher menu element");
-	ret->selector = strdup("Err");
-	ret->server = strdup("Err");
-	ret->port = strdup("Err");
+	ret->desc = estrdup("invalid gopher menu element");
+	ret->selector = estrdup("Err");
+	ret->server = estrdup("Err");
+	ret->port = estrdup("Err");
 	return ret;
+}
+
+/*
+ * List functions
+ */
+void
+list_free(List **l) {
+	size_t i;
+
+	assert(l);
+	if ((*l)) {
+		for (i = 0; i < (*l)->len; i++)
+			free(*((*l)->elems + i));
+		free((*l)->elems);
+		free((*l));
+		*l = NULL;
+	}
+}
+
+void
+list_append(List **l, Elem *e) {
+	assert(l);
+
+	if (!(*l)) {
+		(*l) = emalloc(sizeof(List));
+		(*l)->len = 0;
+	}
+
+	if (!(*l)->elems) {
+		(*l)->len = 1;
+		(*l)->elems = emalloc(sizeof(Elem *) * (*l)->len);
+		*(*l)->elems = elem_dup(e);
+		return;
+	}
+
+	(*l)->len++;
+	(*l)->elems = erealloc((*l)->elems, sizeof(Elem *) * (*l)->len);
+	*((*l)->elems + (*l)->len - 1) = elem_dup(e);
+}
+
+Elem *
+list_get(List **l, size_t elem) {
+	if (!l || !(*l) || (*l)->len == 0 || elem >= (*l)->len)
+		return NULL;
+	return *((*l)->elems + elem);
+}
+
+size_t
+list_len(List **l) {
+	if (!l || !(*l))
+		return 0;
+	return (*l)->len;
 }
 
 int
@@ -305,6 +361,8 @@ go(Elem *e) {
 	char line[BUFLEN];
 	Elem *elem;
 
+	list_free(&page);
+
 	if (e->type != '1' && e->type != '7' && e->type != '+') {
 		/* TODO: call plumber */
 		return -1;
@@ -318,11 +376,11 @@ go(Elem *e) {
 
 	while (readline(line, sizeof(line))) {
 		elem = gophertoelem(e, line);
-#ifdef DEBUG
-		elem_put(elem);
-#endif /* DEBUG */
+		list_append(&page, elem);
 		elem_free(elem);
 	}
+
+	list_put(&page);
 }
 
 int
