@@ -374,6 +374,28 @@ list_len(List **l) {
 	return (*l)->len;
 }
 
+Elem *
+list_pop(List **l) {
+	Elem *ret;
+	size_t i;
+
+	if (!l || !(*l))
+		return NULL;
+
+	if ((*l)->len == 1) {
+		ret = *(*l)->elems;
+		free((*l)->elems);
+		free((*l));
+		*l = NULL;
+	} else {
+		ret = *((*l)->elems + (*l)->len - 1);
+		(*l)->len--;
+		(*l)->elems = erealloc((*l)->elems, sizeof(Elem *) * (*l)->len);
+	}
+
+	return ret;
+}
+
 /*
  * Misc functions
  */
@@ -394,9 +416,10 @@ readline(char *buf, size_t count) {
 }
 
 int
-go(Elem *e) {
+go(Elem *e, int mhist) {
 	char line[BUFLEN];
 	Elem *elem;
+	Elem *dup = elem_dup(e); /* elem may be part of page */
 	int ret;
 
 	if (e->type != '1' && e->type != '7' && e->type != '+') {
@@ -405,7 +428,7 @@ go(Elem *e) {
 	}
 
 	if ((ret = net_connect(e)) == -1) {
-		if (e->tls) {
+		if (dup->tls) {
 			printw("| ");
 			attron(A_BOLD);
 			printw("Try again in cleartext? ");
@@ -415,7 +438,7 @@ go(Elem *e) {
 			if (tolower(getch()) == 'y') {
 				elem = elem_dup(e);
 				elem->tls = 0;
-				ret = go(elem);
+				ret = go(elem, mhist);
 				elem_free(elem);
 			}
 		}
@@ -430,14 +453,15 @@ go(Elem *e) {
 
 	list_free(&page);
 	while (readline(line, sizeof(line))) {
-		elem = gophertoelem(e, line);
+		elem = gophertoelem(dup, line);
 		list_append(&page, elem);
 		elem_free(elem);
 	}
 
+	if (current && mhist)
+		list_append(&history, current);
 	elem_free(current);
-	current = elem_dup(e);
-	list_append(&history, current);
+	current = dup;
 	ui.scroll = 0;
 	return 0;
 }
@@ -591,7 +615,7 @@ run(void) {
 				switch (ui.cmd) {
 				case ':':
 					e = uritoelem(ui.arg);
-					go(e);
+					go(e, 1);
 					elem_free(e);
 					break;
 				}
@@ -679,6 +703,17 @@ run(void) {
 				draw_bar();
 				break;
 			/* commands without arg */
+			case '<':
+				if (history) {
+					e = list_pop(&history);
+					go(e, 0);
+					free(e);
+					draw_page();
+					draw_bar();
+				} else {
+					error("no history");
+				}
+				break;
 			/* commands with arg */
 			case ':':
 				ui.cmd = (char)c;
@@ -704,7 +739,7 @@ gonum:
 		if (atoi(ui.arg) >= page->lastid || atoi(ui.arg) < 1)
 			error("no such link: %d", atoi(ui.arg));
 		else
-			go(list_idget(&page, atoi(ui.arg)));
+			go(list_idget(&page, atoi(ui.arg)), 1);
 		ui.wantinput = 0;
 		draw_page();
 		draw_bar();
@@ -739,7 +774,7 @@ main(int argc, char *argv[]) {
 	}
 
 	target = uritoelem(targeturi);
-	go(target);
+	go(target, 1);
 
 	setlocale(LC_ALL, "");
 	initscr();

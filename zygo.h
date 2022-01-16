@@ -86,6 +86,7 @@ void list_free(List **l);
 void list_append(List **l, Elem *e);
 Elem *list_get(List **l, size_t elem);
 Elem *list_idget(List **l, size_t id);
+Elem *list_pop(List **l);
 size_t list_len(List **l);
 
 
@@ -110,5 +111,5 @@ void run(void);
 
 /* Misc */
 int readline(char *buf, size_t count);
-int go(Elem *e);
+int go(Elem *e, int mhist);
 void sighandler(int signal);
