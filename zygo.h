@@ -113,3 +113,7 @@ void run(void);
 int readline(char *buf, size_t count);
 int go(Elem *e, int mhist);
 void sighandler(int signal);
+#ifdef ZYGO_STRLCAT
+#undef strlcat
+size_t strlcat(char *dst, const char *src, size_t dstsize);
+#endif
