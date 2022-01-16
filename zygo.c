@@ -645,6 +645,19 @@ run(void) {
 					go(e, 1);
 					elem_free(e);
 					break;
+				case '+':
+					if (atoi(ui.arg) >= page->lastid || atoi(ui.arg) < 0) {
+						error("no suck link: %s", ui.arg);
+					} else {
+						move(LINES - 1, 0);
+						attroff(A_COLOR);
+						clrtoeol();
+						printw("%s", elemtouri(list_idget(&page, atoi(ui.arg))));
+						curs_set(0);
+						candraw = 0;
+					}
+					break;
+
 				}
 				ui.wantinput = 0;
 				draw_page();
@@ -717,19 +730,6 @@ run(void) {
 			case 'q':
 				endwin();
 				exit(EXIT_SUCCESS);
-			/* link numbers */
-			case '0': case '1': case '2': case '3': case '4':
-			case '5': case '6': case '7': case '8': case '9':
-				ui.wantinput = 2;
-				ui.input[0] = c;
-				ui.input[1] = '\0';
-				syncinput();
-				il = 1;
-				if (digits(page->lastid) == 1)
-					goto gonum;
-				draw_bar();
-				break;
-			/* commands without arg */
 			case '<':
 				if (history) {
 					e = list_pop(&history);
@@ -745,8 +745,29 @@ run(void) {
 				go(current, 0);
 				draw_page();
 				break;
+			case 'g':
+				ui.scroll = 0;
+				draw_page();
+				break;
+			case 'G':
+				ui.scroll = list_len(&page) - LINES;
+				draw_page();
+				break;
+			/* link numbers */
+			case '0': case '1': case '2': case '3': case '4':
+			case '5': case '6': case '7': case '8': case '9':
+				ui.wantinput = 2;
+				ui.input[0] = c;
+				ui.input[1] = '\0';
+				syncinput();
+				il = 1;
+				if (digits(page->lastid) == 1)
+					goto gonum;
+				draw_bar();
+				break;
 			/* commands with arg */
 			case ':':
+			case '+':
 				ui.cmd = (char)c;
 				ui.wantinput = 1;
 				ui.input[0] = '\0';
