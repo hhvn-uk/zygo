@@ -167,7 +167,7 @@ elemtouri(Elem *e) {
 Elem *
 uritoelem(const char *uri) {
 	Elem *ret;
-	char *dup = strdup(uri);
+	char *dup = estrdup(uri);
 	char *tmp = dup;
 	char *p;
 	enum {SEGSERVER, SEGPORT, SEGTYPE, SEGSELECTOR};
@@ -191,31 +191,31 @@ uritoelem(const char *uri) {
 
 	for (p = tmp, seg = SEGSERVER; *p; p++) {
 		if (seg == SEGSELECTOR || *p == '\t') {
-			ret->selector = strdup(p);
+			ret->selector = estrdup(p);
 			switch (seg) {
 			case SEGSERVER:
 				*p = '\0';
-				ret->server = strdup(tmp);
+				ret->server = estrdup(tmp);
 				break;
 			case SEGPORT:
 				*p = '\0';
-				ret->port = strdup(tmp);
+				ret->port = estrdup(tmp);
 				break;
 			}
 			break;
 		} else if (seg == SEGSERVER && *p == ':') {
 			*p = '\0';
-			ret->server = strdup(tmp);
+			ret->server = estrdup(tmp);
 			tmp = p + 1;
 			seg = SEGPORT;
 		} else if (seg == SEGSERVER && *p == '/') {
 			*p = '\0';
-			ret->server = strdup(tmp);
+			ret->server = estrdup(tmp);
 			tmp = p + 1;
 			seg = SEGTYPE;
 		} else if (seg == SEGPORT && *p == '/') {
 			*p = '\0';
-			ret->port = strdup(tmp);
+			ret->port = estrdup(tmp);
 			tmp = p + 1;
 			seg = SEGTYPE;
 		} else if (seg == SEGTYPE) {
@@ -226,9 +226,9 @@ uritoelem(const char *uri) {
 	}
 
 	ret->type     = ret->type     ? ret->type     : '1';
-	ret->server   = ret->server   ? ret->server   : strdup(tmp);
-	ret->port     = ret->port     ? ret->port     : strdup("70");
-	ret->selector = ret->selector ? ret->selector : strdup(tmp);
+	ret->server   = ret->server   ? ret->server   : estrdup(tmp);
+	ret->port     = ret->port     ? ret->port     : estrdup("70");
+	ret->selector = ret->selector ? ret->selector : estrdup(tmp);
 
 #ifdef DEBUG
 	elem_put(ret);
@@ -242,7 +242,7 @@ end:
 Elem *
 gophertoelem(Elem *from, const char *line) {
 	Elem *ret;
-	char *dup = strdup(line);
+	char *dup = estrdup(line);
 	char *tmp = dup;
 	char *p;
 	enum {SEGDESC, SEGSELECTOR, SEGSERVER, SEGPORT};
@@ -259,16 +259,16 @@ gophertoelem(Elem *from, const char *line) {
 				goto invalid;
 			*p = '\0';
 			switch (seg) {
-			case SEGDESC:     ret->desc     = strdup(tmp); break;
-			case SEGSELECTOR: ret->selector = strdup(tmp); break;
-			case SEGSERVER:   ret->server   = strdup(tmp); break;
+			case SEGDESC:     ret->desc     = estrdup(tmp); break;
+			case SEGSELECTOR: ret->selector = estrdup(tmp); break;
+			case SEGSERVER:   ret->server   = estrdup(tmp); break;
 			}
 			tmp = p + 1;
 			seg++;
 		}
 	}
 
-	ret->port = strdup(tmp);
+	ret->port = estrdup(tmp);
 	return ret;
 
 invalid:
