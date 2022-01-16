@@ -417,7 +417,7 @@ error(char *format, ...) {
 	addstr(" ");
 	refresh();
 	candraw = 0;
-	alarm(1);
+	alarm(5);
 }
 
 Scheme *
