@@ -14,6 +14,8 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+PREFIX	= /usr/local
+BINDIR	= /usr/local/bin
 BIN	= zygo
 SRC	+= zygo.c
 OBJ	= $(SRC:.c=.o)
@@ -30,10 +32,16 @@ zygo.o: config.h
 .c.o:
 	$(CC) $(CFLAGS) -c $< -o $@
 
+install:
+	cp -f $(BIN) $(BINDIR)/$(BIN)
+
+uninstall:
+	-rm -rf $(BINDIR)/$(BIN)
+
 clean:
 	-rm -f $(OBJ) $(BIN)
 
 config.h: config.def.h
 	cp config.def.h config.h
 
-.PHONY: clean
+.PHONY: clean install uninstall
