@@ -1,4 +1,4 @@
-static char *starturi = "gopher://hhvn.uk";
+static char *starturi = "gopher://hhvn.uk/1/git/o/zygo";
 static char *plumber = "xdg-open";
 static int parallelplumb = 0;
 static int stimeout = 5;
@@ -14,24 +14,25 @@ static Scheme scheme[] = {
 	/* type, name,   fg */
 	{'i',    "    ", -1 },
 	{'0',    "Text", -1 },
-	{'1',    "Dir ", -1 },
-	{'2',    "CCSO", -1 },
-	{'4',    "Bin ", -1 },
-	{'5',    "Bin ", -1 },
-	{'9',    "Bin ", -1 },
-	{'7',    "Srch", -1 },
-	{'8',    "Teln", -1 },
-	{'T',    "Teln", -1 },
-	{'+',    "Alt ", -1 },
-	{'I',    "Img ", -1 },
-	{'g',    "Img ", -1 },
-	{'h',    "HTML", -1 },
-	{'s',    "Snd ", -1 },
-	{'d',    "Doc ", -1 },
-	{'3',    "ERR ", -1 },
+	{'1',    "Dir ",  2 },
+	{'2',    "CCSO",  3 },
+	{'4',    "Bin ",  4 },
+	{'5',    "Bin ",  4 },
+	{'9',    "Bin ",  4 },
+	{'7',    "Srch",  3 },
+	{'8',    "Teln",  5 },
+	{'T',    "Teln",  5 },
+	{'+',    "Alt ",  5 },
+	{'I',    "Img ",  6 },
+	{'g',    "Img ",  6 },
+	{'h',    "HTML",  5 },
+	{EXTR,   "Extr",  5 },
+	{'s',    "Snd ",  7 },
+	{'d',    "Doc ",  8 },
+	{'3',    "ERR ",  1 },
 
 	/* DNE! These values are actually used:
 	 * -1 = default foregrounds
 	 *  0 = default colour pair */
-	{'\0',   NULL,	 -1, 0 },
+	{'\0',   "????",  1 },
 };

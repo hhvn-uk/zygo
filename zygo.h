@@ -40,6 +40,7 @@ struct List {
 	size_t lastid;
 };
 
+enum { EXTR = 1 };
 typedef struct Scheme Scheme;
 struct Scheme {
 	char type;
@@ -99,7 +100,7 @@ int net_close(void);
 
 /* UI functions */
 void error(char *format, ...);
-Scheme *getscheme(char type);
+Scheme *getscheme(Elem *e);
 int draw_line(Elem *e, int maxlines);
 void draw_page(void);
 void draw_bar(void);

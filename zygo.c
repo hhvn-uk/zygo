@@ -328,7 +328,7 @@ list_append(List **l, Elem *e) {
 	}
 
 	elem = elem_dup(e);
-	if (elem->type != 'i')
+	if (elem->type != 'i' && elem->type != '3')
 		elem->id = ++(*l)->lastid;
 
 	if (!(*l)->elems) {
@@ -523,8 +523,13 @@ error(char *format, ...) {
 }
 
 Scheme *
-getscheme(char type) {
+getscheme(Elem *e) {
+	char type;
 	int i;
+
+	type = e->type;
+	if (type == 'h' && strstr(e->selector, "URL:"))
+		type = EXTR;
 
 	for (i = 0; ; i++)
 		if (scheme[i].type == type || scheme[i].type == '\0')
@@ -536,15 +541,15 @@ draw_line(Elem *e, int maxlines) {
 	int lc, cc;
 
 	attron(COLOR_PAIR(PAIR_EID));
-	if (e->type != 'i')
+	if (e->type != 'i' && e->type != '3')
 		printw("% 3d ", e->id);
 	else
 		printw("    ");
 	attroff(A_COLOR);
-	printw("%s | ", getscheme(e->type)->name);
-	attron(COLOR_PAIR(getscheme(e->type)->pair));
-	printw("%s\n", e->desc);
+	attron(COLOR_PAIR(getscheme(e)->pair));
+	printw("%s ", getscheme(e)->name);
 	attroff(A_COLOR);
+	printw("| %s\n", e->desc);
 	return 1;
 }
 
@@ -820,7 +825,7 @@ main(int argc, char *argv[]) {
 	init_pair(PAIR_ARG, arg_pair[0], arg_pair[1]);
 	init_pair(PAIR_ERR, err_pair[0], err_pair[1]);
 	init_pair(PAIR_EID, eid_pair[0], eid_pair[1]);
-	for (i = 0; scheme[i].type; i++) {
+	for (i = 0; i == 0 || scheme[i - 1].type; i++) {
 		scheme[i].pair = i + PAIR_SCHEME;
 		init_pair(scheme[i].pair, scheme[i].fg, -1);
 	}
