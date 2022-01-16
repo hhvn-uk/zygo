@@ -17,6 +17,7 @@
 BIN	= zygo
 SRC	+= zygo.c
 OBJ	= $(SRC:.c=.o)
+LDFLAGS = -lncurses
 
 include config.mk
 
@@ -24,6 +25,7 @@ $(BIN): $(OBJ)
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $(OBJ)
 
 $(OBJ): Makefile config.mk zygo.h
+zygo.o: config.h
 
 .c.o:
 	$(CC) $(CFLAGS) -c $< -o $@

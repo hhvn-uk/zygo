@@ -18,6 +18,7 @@
  */
 
 #define BUFLEN 2048
+#define zygo_assert(expr) (expr ? ((void)0) : (endwin(), assert(expr)))
 
 typedef struct Elem Elem;
 struct Elem {
@@ -35,16 +36,31 @@ struct List {
 	size_t len;
 };
 
+typedef struct Scheme Scheme;
+struct Scheme {
+	char type;
+	char *name;
+	short fg;
+	short pair;
+};
+
 enum {
 	CONF_TLS_VERIFY = 'k',
+};
+
+enum {
+	PAIR_BAR = 1,
+	PAIR_URI = 2,
+	PAIR_CMD = 3,
+	PAIR_ARG = 4,
+	PAIR_ERR = 5,
+	PAIR_SCHEME = 6,
 };
 
 extern List *history;
 extern List *page;
 extern Elem *current;
 extern int config[];
-
-void error(char *format, ...);
 
 /* Memory functions */
 void *emalloc(size_t size);
@@ -54,7 +70,7 @@ void estrappend(char **s1, const char *s2);
 
 /* Elem functions */
 void elem_free(Elem *e);
-Elem *elem_create(char type, char *desc, char *selector, char *server, char *port);
+Elem *elem_create(int tls, char type, char *desc, char *selector, char *server, char *port);
 Elem *elem_dup(Elem *e);
 Elem *uritoelem(const char *uri);
 Elem *gophertoelem(Elem *from, const char *line);
@@ -77,10 +93,13 @@ int net_read(void *buf, size_t count);
 int net_write(void *buf, size_t count);
 int net_close(void);
 
-#ifdef DEBUG
-void *elem_put(Elem *e); /* debug */
-void *list_put(List **l);
-#else
-#define elem_put(a) ((void)0)
-#define list_put(a) ((void)0)
-#endif /* DEBUG */
+/* UI functions */
+void error(char *format, ...);
+Scheme *getscheme(char type);
+int draw_line(Elem *e, int maxlines);
+void draw_page(void);
+void draw_bar(void);
+void syncinput(void);
+
+/* Main loop */
+void run(void);

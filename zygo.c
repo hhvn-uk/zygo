@@ -17,12 +17,16 @@
  *
  */
 
+#include <ncurses.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <libgen.h>
 #include <assert.h>
+#include <locale.h>
 #include <stdio.h>
 #include "zygo.h"
+#include "config.h"
 
 List *history = NULL;
 List *page = NULL;
@@ -32,14 +36,13 @@ int config[] = {
 	[CONF_TLS_VERIFY] = 1,
 };
 
-void
-error(char *format, ...) {
-	va_list ap;
-
-	va_start(ap, format);
-	vfprintf(stderr, format, ap);
-	va_end(ap);
-}
+struct {
+	int scroll;
+	int wantinput;
+	wint_t input[BUFLEN];
+	char cmd;
+	char *arg;
+} ui = {0, 0};
 
 /*
  * Memory functions
@@ -104,11 +107,12 @@ elem_free(Elem *e) {
 }
 
 Elem *
-elem_create(char type, char *desc, char *selector, char *server, char *port) {
+elem_create(int tls, char type, char *desc, char *selector, char *server, char *port) {
 	Elem *ret;
 
 #define DUP(str) str ? estrdup(str) : NULL
 	ret = emalloc(sizeof(Elem));
+	ret->tls = tls;
 	ret->type = type;
 	ret->desc = DUP(desc);
 	ret->selector = DUP(selector);
@@ -122,7 +126,7 @@ elem_create(char type, char *desc, char *selector, char *server, char *port) {
 Elem *
 elem_dup(Elem *e) {
 	if (e)
-		return elem_create(e->type, e->desc, e->selector, e->server, e->port);
+		return elem_create(e->tls, e->type, e->desc, e->selector, e->server, e->port);
 	else
 		return NULL;
 }
@@ -151,8 +155,8 @@ elemtouri(Elem *e) {
 		break;
 	}
 
-	assert(e->server);
-	assert(e->port);
+	zygo_assert(e->server);
+	zygo_assert(e->port);
 
 	estrappend(&ret, e->server);
 	if (strcmp(e->port, "70") != 0) {
@@ -180,8 +184,9 @@ uritoelem(const char *uri) {
 	int seg;
 
 	ret = emalloc(sizeof(Elem));
-	ret->tls = ret->type = 0;
-	ret->desc = ret->selector = ret->server = ret->port;
+	ret->tls = 0;
+	ret->type = '1';
+	ret->desc = ret->selector = ret->server = ret->port = NULL;
 
 	if (strncmp(tmp, "gopher://", strlen("gopher://")) == 0) {
 		tmp += strlen("gopher://");
@@ -231,8 +236,11 @@ uritoelem(const char *uri) {
 		}
 	}
 
-	ret->type     = ret->type     ? ret->type     : '1';
-	ret->server   = ret->server   ? ret->server   : estrdup(tmp);
+	if (!ret->server) {
+		ret->server = estrdup(tmp);
+		tmp += strlen(tmp);
+	}
+
 	ret->port     = ret->port     ? ret->port     : estrdup("70");
 	ret->selector = ret->selector ? ret->selector : estrdup(tmp);
 
@@ -271,9 +279,11 @@ gophertoelem(Elem *from, const char *line) {
 	}
 
 	ret->port = estrdup(tmp);
+	free(dup);
 	return ret;
 
 invalid:
+	free(dup);
 	free(ret->desc);
 	free(ret->selector);
 	free(ret->server);
@@ -293,7 +303,7 @@ void
 list_free(List **l) {
 	size_t i;
 
-	assert(l);
+	zygo_assert(l);
 	if ((*l)) {
 		for (i = 0; i < (*l)->len; i++)
 			free(*((*l)->elems + i));
@@ -305,11 +315,12 @@ list_free(List **l) {
 
 void
 list_append(List **l, Elem *e) {
-	assert(l);
+	zygo_assert(l);
 
 	if (!(*l)) {
 		(*l) = emalloc(sizeof(List));
 		(*l)->len = 0;
+		(*l)->elems = NULL;
 	}
 
 	if (!(*l)->elems) {
@@ -359,8 +370,6 @@ go(Elem *e) {
 	char line[BUFLEN];
 	Elem *elem;
 
-	list_free(&page);
-
 	if (e->type != '1' && e->type != '7' && e->type != '+') {
 		/* TODO: call plumber */
 		return -1;
@@ -372,15 +381,245 @@ go(Elem *e) {
 	net_write(e->selector, strlen(e->selector));
 	net_write("\r\n", 2);
 
+	list_free(&page);
 	while (readline(line, sizeof(line))) {
 		elem = gophertoelem(e, line);
 		list_append(&page, elem);
 		elem_free(elem);
 	}
+
+	elem_free(current);
+	current = elem_dup(e);
+	list_append(&history, current);
+	ui.scroll = 0;
+	return 0;
+}
+
+/*
+ * UI functions
+ */
+void
+error(char *format, ...) {
+	va_list ap;
+
+	move(LINES - 1, 0);
+	clrtoeol();
+	attron(COLOR_PAIR(PAIR_ERR));
+	addstr(" error: ");
+
+	va_start(ap, format);
+	vw_printw(stdscr, format, ap);
+	va_end(ap);
+
+	addstr(" ");
+	getch();
+}
+
+Scheme *
+getscheme(char type) {
+	int i;
+
+	for (i = 0; ; i++)
+		if (scheme[i].type == type || scheme[i].type == '\0')
+			return &scheme[i];
 }
 
 int
-main(void) {
-	Elem *s = uritoelem("gophers://hhvn.uk/1/");
-	go(s);
+draw_line(Elem *e, int maxlines) {
+	int lc, cc;
+
+	printw("%s | ", getscheme(e->type)->name);
+	attron(COLOR_PAIR(getscheme(e->type)->pair));
+	printw("%s\n", e->desc);
+	attroff(A_COLOR);
+	return 1;
+}
+
+void
+draw_page(void) {
+	int y = 0, i;
+
+	move(0, 0);
+	zygo_assert(ui.scroll < list_len(&page));
+	for (i = ui.scroll; i < list_len(&page) - 1 && y < LINES - 1; i++)
+		y += draw_line(list_get(&page, i), 1);
+	for (; y < LINES - 1; y++) {
+		move(y, 0);
+		clrtoeol();
+	}
+}
+
+void
+draw_bar(void) {
+	int savey, savex, x;
+
+	move(LINES - 1, 0);
+	clrtoeol();
+	attron(COLOR_PAIR(PAIR_URI));
+	printw(" %s ", elemtouri(current));
+	attron(COLOR_PAIR(PAIR_BAR));
+	printw(" ");
+	if (ui.wantinput) {
+		curs_set(1);
+		attron(COLOR_PAIR(PAIR_CMD));
+		printw("%c", ui.cmd);
+		attron(COLOR_PAIR(PAIR_ARG));
+		printw("%s", ui.arg);
+	} else curs_set(0);
+
+	attron(COLOR_PAIR(PAIR_BAR));
+	getyx(stdscr, savey, savex);
+	for (x = savex; x < COLS; x++)
+		addch(' ');
+	move(savey, savex);
+}
+
+void
+syncinput(void) {
+	int len;
+	free(ui.arg);
+	len = wcstombs(NULL, ui.input, 0) + 1;
+	ui.arg = emalloc(len);
+	wcstombs(ui.arg, ui.input, len);
+}
+
+/*
+ * Main loop
+ */
+void
+run(void) {
+	wint_t c;
+	int ret;
+	size_t il;
+	Elem *e;
+
+	draw_page();
+	draw_bar();
+
+	/* get_wch does refresh() for us */
+	while ((ret = get_wch(&c)) != ERR) {
+		if (c == KEY_RESIZE) {
+			draw_page();
+			draw_bar();
+		} else if (ui.wantinput) {
+			if (c == 27 /* escape */) {
+				ui.wantinput = 0;
+			} else if (c == '\n') {
+				switch (ui.cmd) {
+				case ':':
+					e = uritoelem(ui.arg);
+					go(e);
+					elem_free(e);
+					break;
+				}
+				ui.wantinput = 0;
+				draw_page();
+			} else if (c == KEY_BACKSPACE || c == 127) {
+				if (il == 0) {
+					ui.wantinput = 0;
+				} else {
+					ui.input[il--] = '\0';
+					syncinput();
+				}
+			} else if (c >= 32 && c < KEY_CODE_YES) {
+				ui.input[il++] = c;
+				ui.input[il] = '\0';
+				syncinput();
+			}
+			draw_bar();
+		} else {
+			switch (c) {
+			case KEY_DOWN:
+			case 'j':
+				if (list_len(&page) - ui.scroll > LINES)
+					ui.scroll++;
+				draw_page();
+				break;
+			case 4: /* ^D */
+			case 6: /* ^F */
+				if (list_len(&page) - ui.scroll > ((int)LINES * 1.5))
+					ui.scroll += ((int)LINES / 2);
+				else if (list_len(&page) > LINES)
+					ui.scroll = list_len(&page) - LINES;
+				draw_page();
+				break;
+			case KEY_UP:
+			case 'k':
+				if (ui.scroll > 0)
+					ui.scroll--;
+				draw_page();
+				break;
+			case 21: /* ^U */
+			case 2:  /* ^B */
+				ui.scroll -= ((int)LINES / 2);
+				if (ui.scroll < 0)
+					ui.scroll = 0;
+				draw_page();
+				break;
+			case 3: /* ^C */
+			case 'q':
+				endwin();
+				exit(EXIT_SUCCESS);
+			case '0': case '1': case '2': case '3': case '4':
+			case '5': case '6': case '7': case '8': case '9':
+				/* TODO: numbered link handling */
+				break;
+			case ':':
+				ui.cmd = (char)c;
+				ui.wantinput = 1;
+				ui.input[0] = '\0';
+				ui.arg = estrdup("");
+				il = 0;
+				draw_bar();
+				break;
+			default:
+				/* TODO: some sort of indicator */
+				break;
+			}
+		}
+	}
+}
+
+int
+main(int argc, char *argv[]) {
+	Elem *target;
+	char *targeturi;
+	int i;
+
+	switch (argc) {
+	case 2:
+		targeturi = argv[1];
+		break;
+	case 1:
+		targeturi = starturi;
+		break;
+	default:
+		fprintf(stderr, "usage: %s [uri]\n", basename(argv[0]));
+		exit(EXIT_FAILURE);
+	}
+
+	target = uritoelem(targeturi);
+	go(target);
+
+	setlocale(LC_ALL, "");
+	initscr();
+	noecho();
+	start_color();
+	use_default_colors();
+	keypad(stdscr, TRUE);
+	set_escdelay(10);
+
+	init_pair(PAIR_BAR, bar_pair[0], bar_pair[1]);
+	init_pair(PAIR_URI, uri_pair[0], uri_pair[1]);
+	init_pair(PAIR_CMD, cmd_pair[0], cmd_pair[1]);
+	init_pair(PAIR_ARG, arg_pair[0], arg_pair[1]);
+	init_pair(PAIR_ERR, err_pair[0], err_pair[1]);
+	for (i = 0; scheme[i].type; i++) {
+		scheme[i].pair = i + PAIR_SCHEME;
+		init_pair(scheme[i].pair, scheme[i].fg, -1);
+	}
+
+	run();
+
+	endwin();
 }
