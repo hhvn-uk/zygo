@@ -741,6 +741,10 @@ run(void) {
 					error("no history");
 				}
 				break;
+			case '*':
+				go(current, 0);
+				draw_page();
+				break;
 			/* commands with arg */
 			case ':':
 				ui.cmd = (char)c;
