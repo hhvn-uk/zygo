@@ -29,7 +29,7 @@ List *page = NULL;
 Elem *current = NULL;
 
 int config[] = {
-	[CONF_TLS_VERIFY] = 0,
+	[CONF_TLS_VERIFY] = 1,
 };
 
 void
@@ -165,7 +165,7 @@ elemtouri(Elem *e) {
 }
 
 Elem *
-uritoelem(char *uri) {
+uritoelem(const char *uri) {
 	Elem *ret;
 	char *dup = strdup(uri);
 	char *tmp = dup;
@@ -239,6 +239,51 @@ end:
 	return ret;
 }
 
+Elem *
+gophertoelem(Elem *from, const char *line) {
+	Elem *ret;
+	char *dup = strdup(line);
+	char *tmp = dup;
+	char *p;
+	enum {SEGDESC, SEGSELECTOR, SEGSERVER, SEGPORT};
+	int seg;
+
+	ret = emalloc(sizeof(Elem));
+	ret->tls = from ? from->tls : 0;
+	ret->type = *(tmp++);
+	ret->desc = ret->selector = ret->server = ret->port = NULL;
+
+	for (p = tmp, seg = SEGDESC; *p; p++) {
+		if (*p == '\t') {
+			if (seg == SEGPORT)
+				goto invalid;
+			*p = '\0';
+			switch (seg) {
+			case SEGDESC:     ret->desc     = strdup(tmp); break;
+			case SEGSELECTOR: ret->selector = strdup(tmp); break;
+			case SEGSERVER:   ret->server   = strdup(tmp); break;
+			}
+			tmp = p + 1;
+			seg++;
+		}
+	}
+
+	ret->port = strdup(tmp);
+	return ret;
+
+invalid:
+	free(ret->desc);
+	free(ret->selector);
+	free(ret->server);
+	free(ret->port);
+	ret->type = '3';
+	ret->desc = strdup("invalid gopher menu element");
+	ret->selector = strdup("Err");
+	ret->server = strdup("Err");
+	ret->port = strdup("Err");
+	return ret;
+}
+
 int
 readline(char *buf, size_t count) {
 	size_t i = 0;
@@ -258,6 +303,7 @@ readline(char *buf, size_t count) {
 int
 go(Elem *e) {
 	char line[BUFLEN];
+	Elem *elem;
 
 	if (e->type != '1' && e->type != '7' && e->type != '+') {
 		/* TODO: call plumber */
@@ -271,7 +317,11 @@ go(Elem *e) {
 	net_write("\r\n", 2);
 
 	while (readline(line, sizeof(line))) {
-		fprintf(stderr, "%s\n", line);
+		elem = gophertoelem(e, line);
+#ifdef DEBUG
+		elem_put(elem);
+#endif /* DEBUG */
+		elem_free(elem);
 	}
 }
 
