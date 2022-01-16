@@ -71,7 +71,6 @@ extern int config[];
 void *emalloc(size_t size);
 void *erealloc(void *ptr, size_t size);
 char *estrdup(const char *str);
-void estrappend(char **s1, const char *s2);
 
 /* Elem functions */
 void elem_free(Elem *e);

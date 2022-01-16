@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <sys/wait.h>
 #include "zygo.h"
 #include "config.h"
 
@@ -89,15 +90,6 @@ estrdup(const char *str) {
 	return ret;
 }
 
-void
-estrappend(char **s1, const char *s2) {
-	size_t len;
-
-	len = strlen(*s1) + strlen(s2) + 1;
-	*s1 = erealloc(*s1, len);
-	snprintf(*s1 + strlen(*s1), len - strlen(s2), "%s", s2);
-}
-
 /*
  * Elem functions
  */
@@ -139,43 +131,46 @@ elem_dup(Elem *e) {
 
 char *
 elemtouri(Elem *e) {
-	static char *ret = NULL;
+	static char ret[BUFLEN];
 	char type[2] = {0, 0};
 
-	free(ret);
-	ret = NULL;
+	ret[0] = '\0';
 
 	switch (e->type) {
 	case 'T':
 	case '8':
-		ret = estrdup("teln://");
+		strlcat(ret, "teln://", sizeof(ret));
 		break;
 	case 'h':
-		if (strncmp(e->selector, "URL:", strlen("URL:")) == 0)
-			return (ret = estrdup(e->selector + strlen("URL:")));
-		else if (strncmp(e->selector, "/URL:", strlen("/URL:")) == 0)
-			return (ret = estrdup(e->selector + strlen("/URL:")));
+		if (strncmp(e->selector, "URL:", strlen("URL:")) == 0) {
+			strlcat(ret, e->selector + strlen("URL:"), sizeof(ret));
+			return ret;
+		}
+		else if (strncmp(e->selector, "/URL:", strlen("/URL:")) == 0) {
+			strlcat(ret, e->selector + strlen("URL:"), sizeof(ret));
+			return ret;
+		}
 		/* fallthrough */
 	default:
-		ret = estrdup(e->tls ? "gophers://" : "gopher://");
+		strlcat(ret, e->tls ? "gophers://" : "gopher://", sizeof(ret));
 		break;
 	}
 
 	zygo_assert(e->server);
 	zygo_assert(e->port);
 
-	estrappend(&ret, e->server);
+	strlcat(ret, e->server, sizeof(ret));
 	if (strcmp(e->port, "70") != 0) {
-		estrappend(&ret, ":");
-		estrappend(&ret, e->port);
+		strlcat(ret, ":", sizeof(ret));
+		strlcat(ret, e->port, sizeof(ret));
 	}
 
 	type[0] = e->type;
-	estrappend(&ret, "/");
-	estrappend(&ret, type);
+	strlcat(ret, "/", sizeof(ret));
+	strlcat(ret, type, sizeof(ret));
 
 	if (e->selector && *e->selector && strcmp(e->selector, "/") != 0)
-		estrappend(&ret, e->selector);
+		strlcat(ret, e->selector, sizeof(ret));
 
 	return ret;
 }
@@ -418,12 +413,39 @@ readline(char *buf, size_t count) {
 int
 go(Elem *e, int mhist) {
 	char line[BUFLEN];
+	char *sh, *arg, *uri;
 	Elem *elem;
 	Elem *dup = elem_dup(e); /* elem may be part of page */
 	int ret;
+	pid_t pid;
 
 	if (e->type != '1' && e->type != '7' && e->type != '+') {
-		/* TODO: call plumber */
+		/* call mario */
+		uri = elemtouri(e);
+		arg = emalloc(strlen(plumber) + strlen(uri) + 2);
+		snprintf(arg, strlen(plumber) + strlen(uri) + 2, "%s %s", plumber, uri);
+
+		sh = getenv("SHELL");
+		sh = sh ? sh : "/bin/sh";
+
+		if (!parallelplumb)
+			endwin();
+
+		if ((pid = fork()) == 0) {
+			if (parallelplumb) {
+				close(1);
+				close(2);
+			}
+			execl(sh, sh, "-c", arg, NULL);
+		}
+		zygo_assert(pid != -1);
+
+		if (!parallelplumb) {
+			waitpid(pid, NULL, 0);
+			fprintf(stderr, "Press enter...");
+			fread(&line, sizeof(char), 1, stdin);
+			initscr();
+		}
 		return -1;
 	}
 
@@ -748,10 +770,15 @@ gonum:
 
 void
 sighandler(int signal) {
-	if (signal == SIGALRM) {
+	switch (signal) {
+	case SIGALRM:
 		candraw = 1;
 		draw_bar();
 		refresh();
+		break;
+	case SIGCHLD:
+		while (waitpid(-1, NULL, WNOHANG) == 0);
+		break;
 	}
 }
 
@@ -785,6 +812,7 @@ main(int argc, char *argv[]) {
 	set_escdelay(10);
 
 	signal(SIGALRM, sighandler);
+	signal(SIGCHLD, sighandler);
 
 	init_pair(PAIR_BAR, bar_pair[0], bar_pair[1]);
 	init_pair(PAIR_URI, uri_pair[0], uri_pair[1]);
