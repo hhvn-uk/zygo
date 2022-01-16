@@ -33,4 +33,7 @@ zygo.o: config.h
 clean:
 	-rm -f $(OBJ) $(BIN)
 
+config.h: config.def.h
+	cp config.def.h config.h
+
 .PHONY: clean

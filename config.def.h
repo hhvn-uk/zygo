@@ -1,6 +1,6 @@
 static char *starturi = "gopher://hhvn.uk";
-static char *plumber = "plumb";
-static int parallelplumb = 1;
+static char *plumber = "xdg-open";
+static int parallelplumb = 0;
 static int stimeout = 5;
 
 static short bar_pair[2] = {-1,  0};
