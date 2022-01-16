@@ -24,6 +24,8 @@
 #include <libgen.h>
 #include <assert.h>
 #include <locale.h>
+#include <signal.h>
+#include <unistd.h>
 #include <stdio.h>
 #include "zygo.h"
 #include "config.h"
@@ -32,6 +34,7 @@ List *history = NULL;
 List *page = NULL;
 Elem *current = NULL;
 
+int candraw = 1;
 int config[] = {
 	[CONF_TLS_VERIFY] = 1,
 };
@@ -412,7 +415,9 @@ error(char *format, ...) {
 	va_end(ap);
 
 	addstr(" ");
-	getch();
+	refresh();
+	candraw = 0;
+	alarm(1);
 }
 
 Scheme *
@@ -439,6 +444,11 @@ void
 draw_page(void) {
 	int y = 0, i;
 
+	if (!candraw)
+		return;
+
+	attroff(A_COLOR);
+
 	move(0, 0);
 	zygo_assert(ui.scroll < list_len(&page));
 	for (i = ui.scroll; i < list_len(&page) - 1 && y < LINES - 1; i++)
@@ -452,6 +462,9 @@ draw_page(void) {
 void
 draw_bar(void) {
 	int savey, savex, x;
+
+	if (!candraw)
+		return;
 
 	move(LINES - 1, 0);
 	clrtoeol();
@@ -498,6 +511,12 @@ run(void) {
 
 	/* get_wch does refresh() for us */
 	while ((ret = get_wch(&c)) != ERR) {
+		if (!candraw) {
+			candraw = 1;
+			draw_page();
+			draw_bar();
+		}
+
 		if (c == KEY_RESIZE) {
 			draw_page();
 			draw_bar();
@@ -518,7 +537,7 @@ run(void) {
 				if (il == 0) {
 					ui.wantinput = 0;
 				} else {
-					ui.input[il--] = '\0';
+					ui.input[--il] = '\0';
 					syncinput();
 				}
 			} else if (c >= 32 && c < KEY_CODE_YES) {
@@ -572,11 +591,24 @@ run(void) {
 				il = 0;
 				draw_bar();
 				break;
+			case '\n':
+			case 27: /* escape */
+			case KEY_BACKSPACE:
+				break;
 			default:
-				/* TODO: some sort of indicator */
+				error("not bound");
 				break;
 			}
 		}
+	}
+}
+
+void
+sighandler(int signal) {
+	if (signal == SIGALRM) {
+		candraw = 1;
+		draw_bar();
+		refresh();
 	}
 }
 
@@ -608,6 +640,8 @@ main(int argc, char *argv[]) {
 	use_default_colors();
 	keypad(stdscr, TRUE);
 	set_escdelay(10);
+
+	signal(SIGALRM, sighandler);
 
 	init_pair(PAIR_BAR, bar_pair[0], bar_pair[1]);
 	init_pair(PAIR_URI, uri_pair[0], uri_pair[1]);

@@ -1,10 +1,10 @@
 static char *starturi = "gopher://hhvn.uk";
 
-static short bar_pair[2] = {-1, 0};
-static short uri_pair[2] = {0,  7};
-static short cmd_pair[2] = {7,  0};
-static short arg_pair[2] = {-1, 0};
-static short err_pair[2] = {0,  88};
+static short bar_pair[2] = {-1,  0};
+static short uri_pair[2] = {0,   7};
+static short cmd_pair[2] = {7,   0};
+static short arg_pair[2] = {-1,  0};
+static short err_pair[2] = {160, 0};
 
 static Scheme scheme[] = {
 	{'i',	"    ",	-1 },

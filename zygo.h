@@ -82,8 +82,6 @@ void list_append(List **l, Elem *e);
 Elem *list_get(List **l, size_t elem);
 size_t list_len(List **l);
 
-int readline(char *buf, size_t count);
-int go(Elem *e);
 
 /* Network functions
  * only works with one fd/ctx at 
@@ -103,3 +101,8 @@ void syncinput(void);
 
 /* Main loop */
 void run(void);
+
+/* Misc */
+int readline(char *buf, size_t count);
+int go(Elem *e);
+void sighandler(int signal);
