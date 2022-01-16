@@ -236,8 +236,6 @@ uritoelem(const char *uri) {
 	ret->port     = ret->port     ? ret->port     : estrdup("70");
 	ret->selector = ret->selector ? ret->selector : estrdup(tmp);
 
-	elem_put(ret);
-
 end:
 	free(dup);
 	return ret;
@@ -379,8 +377,6 @@ go(Elem *e) {
 		list_append(&page, elem);
 		elem_free(elem);
 	}
-
-	list_put(&page);
 }
 
 int
