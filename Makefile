@@ -23,7 +23,7 @@ include config.mk
 $(BIN): $(OBJ)
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $(OBJ)
 
-$(OBJ): Makefile zygo.h
+$(OBJ): Makefile config.mk zygo.h
 
 .c.o:
 	$(CC) $(CFLAGS) -c $< -o $@
