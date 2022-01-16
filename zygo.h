@@ -80,7 +80,7 @@ int net_close(void);
 #ifdef DEBUG
 void *elem_put(Elem *e); /* debug */
 void *list_put(List **l);
-#elif
+#else
 #define elem_put(a) ((void)0)
 #define list_put(a) ((void)0)
 #endif /* DEBUG */
