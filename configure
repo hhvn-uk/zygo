@@ -68,6 +68,6 @@ ${CC} -o test test.c >/dev/null 2>/dev/null && ./test >/dev/null 2>/dev/null && 
 	cat >> config.mk <<- EOF
 		# linking an included version of strlcat, as your system doesn't have it
 		CFLAGS	+= -DZYGO_STRLCAT
-		SRC	+= src/strlcpy.c
+		SRC	+= strlcat.c
 	EOF
 }
