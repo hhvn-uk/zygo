@@ -6,6 +6,8 @@ static short cmd_pair[2] = {7,   0};
 static short arg_pair[2] = {-1,  0};
 static short err_pair[2] = {160, 0};
 
+static int stimeout = 5;
+
 static Scheme scheme[] = {
 	{'i',	"    ",	-1 },
 	{'0',	"Text",	-1 },

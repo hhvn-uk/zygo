@@ -372,14 +372,33 @@ int
 go(Elem *e) {
 	char line[BUFLEN];
 	Elem *elem;
+	int ret;
 
 	if (e->type != '1' && e->type != '7' && e->type != '+') {
 		/* TODO: call plumber */
 		return -1;
 	}
 
-	if (net_connect(e) == -1)
-		return -1;
+	if ((ret = net_connect(e)) == -1) {
+		if (e->tls) {
+			printw("| ");
+			attron(A_BOLD);
+			printw("Try again in cleartext? ");
+			attroff(A_BOLD);
+			refresh();
+			timeout(stimeout * 1000);
+			if (tolower(getch()) == 'y') {
+				elem = elem_dup(e);
+				elem->tls = 0;
+				ret = go(elem);
+				elem_free(elem);
+			}
+		}
+
+		timeout(-1);
+		candraw = 1;
+		return ret;
+	}
 
 	net_write(e->selector, strlen(e->selector));
 	net_write("\r\n", 2);

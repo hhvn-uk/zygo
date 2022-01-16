@@ -10,8 +10,8 @@ static int tls;
 
 #define net_free() \
 	if (ai) freeaddrinfo(ai); \
-	if (ctx) tls_free(ctx); \
-	if (conf) tls_config_free(conf)
+	if (ctx) { tls_free(ctx); ctx = NULL; } \
+	if (conf) { tls_config_free(conf); conf = NULL; }
 
 int
 net_connect(Elem *e) {
@@ -23,6 +23,8 @@ net_connect(Elem *e) {
 	if (tls) {
 		if (conf)
 			tls_config_free(conf);
+		if (ctx)
+			tls_free(ctx);
 
 		if ((conf = tls_config_new()) == NULL) {
 			error("tls_config_new(): %s", tls_config_error(conf));
@@ -59,6 +61,10 @@ net_connect(Elem *e) {
 	if (tls) {
 		if (tls_connect_socket(ctx, fd, e->server) == -1) {
 			error("could not tls-ify connection to %s:%s", e->server, e->port);
+			goto fail;
+		}
+		if (tls_handshake(ctx) == -1) {
+			error("could not perform tls handshake with %s:%s", e->server, e->port);
 			goto fail;
 		}
 	}
