@@ -586,7 +586,7 @@ find(int backward) {
 		return;
 	}
 
-	for (i = 0; i <= list_len(&page); i++) {
+	for (i = 0; i < list_len(&page); i++) {
 		if (regexec(&ui.regex, list_get(&page, i)->desc, 0, NULL, 0) == 0) {
 			matches[mlast].found = 1;
 			matches[mlast].pos = i;
