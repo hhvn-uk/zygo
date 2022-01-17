@@ -21,7 +21,9 @@ BIN	= zygo
 MAN	= zygo.1
 SRC	+= zygo.c
 OBJ	= $(SRC:.c=.o)
+COMMIT	= $(shell git log HEAD...HEAD~1 --pretty=format:%h)
 LDFLAGS = -lncurses
+CFLAGS	= -DCOMMIT=\"$(COMMIT)\"
 
 include config.mk
 
@@ -36,7 +38,7 @@ zygo.o: config.h
 
 install:
 	cp -f $(BIN) $(BINDIR)/$(BIN)
-	cp $(MAN) $(MANDIR)/man1/$(MAN)
+	sed "s/COMMIT/$(COMMIT)/" < $(MAN) > $(MANDIR)/man1/$(MAN)
 
 uninstall:
 	-rm -rf $(BINDIR)/$(BIN) $(MANDIR)/man1/$(MAN)
