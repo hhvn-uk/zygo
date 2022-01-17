@@ -263,7 +263,6 @@ gophertoelem(Elem *from, const char *line) {
 	int seg;
 
 	ret = emalloc(sizeof(Elem));
-	ret->tls = from ? from->tls : 0;
 	ret->type = *(tmp++);
 	ret->desc = ret->selector = ret->server = ret->port = NULL;
 
@@ -283,6 +282,13 @@ gophertoelem(Elem *from, const char *line) {
 	}
 
 	ret->port = estrdup(tmp);
+	if (from && from->tls &&
+			strcmp(ret->server, from->server) == 0 &&
+			strcmp(ret->port, from->port) == 0)
+		ret->tls = 1;
+	else
+		ret->tls = 0;
+
 	free(dup);
 	return ret;
 
