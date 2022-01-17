@@ -486,6 +486,11 @@ go(Elem *e, int mhist) {
 				"%s\t%s", e->selector, search);
 	}
 
+	move(LINES - 1, 0);
+	clrtoeol();
+	printw("Connecting to %s:%s", dup->server, dup->port);
+	refresh();
+
 	if ((ret = net_connect(e)) == -1) {
 		if (dup->tls) {
 			attron(A_BOLD | COLOR_PAIR(PAIR_CMD));
