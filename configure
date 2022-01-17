@@ -14,6 +14,7 @@ ${CC} -ltls -o test test.c >/dev/null 2>/dev/null && {
 	printf '%s\n' "yes"
 	cat >> config.mk <<- EOF
 		# libretls or libtls (standalone tls.h implementation) configuration
+		CFLAGS	+= -DTLS
 		LDFLAGS	+= -ltls
 		SRC	+= tls.c
 	EOF

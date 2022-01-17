@@ -195,8 +195,15 @@ uritoelem(const char *uri) {
 	if (strncmp(tmp, "gopher://", strlen("gopher://")) == 0) {
 		tmp += strlen("gopher://");
 	} else if (strncmp(tmp, "gophers://", strlen("gophers://")) == 0) {
+#ifdef TLS
 		ret->tls = 1;
 		tmp += strlen("gophers://");
+#else
+		error("TLS support not compiled");
+		free(ret);
+		ret = NULL;
+		goto end;
+#endif /* TLS */
 	} else if (strstr(tmp, "://")) {
 		error("non-gopher protocol entered");
 		free(ret);
