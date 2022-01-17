@@ -627,13 +627,15 @@ draw_page(void) {
 
 	attroff(A_COLOR);
 
-	move(0, 0);
-	zygo_assert(ui.scroll < list_len(&page));
-	for (i = ui.scroll; i < list_len(&page) - 1 && y < LINES - 1; i++)
-		y += draw_line(list_get(&page, i), 1);
-	for (; y < LINES - 1; y++) {
-		move(y, 0);
-		clrtoeol();
+	if (page) {
+		move(0, 0);
+		zygo_assert(ui.scroll < list_len(&page));
+		for (i = ui.scroll; i < list_len(&page) - 1 && y < LINES - 1; i++)
+			y += draw_line(list_get(&page, i), 1);
+		for (; y < LINES - 1; y++) {
+			move(y, 0);
+			clrtoeol();
+		}
 	}
 }
 
@@ -646,8 +648,10 @@ draw_bar(void) {
 
 	move(LINES - 1, 0);
 	clrtoeol();
-	attron(COLOR_PAIR(PAIR_URI));
-	printw(" %s ", elemtouri(current));
+	if (current) {
+		attron(COLOR_PAIR(PAIR_URI));
+		printw(" %s ", elemtouri(current));
+	}
 	attron(COLOR_PAIR(PAIR_BAR));
 	printw(" ");
 	if (ui.wantinput) {
@@ -665,6 +669,33 @@ draw_bar(void) {
 	for (x = savex; x < COLS; x++)
 		addch(' ');
 	move(savey, savex);
+}
+
+void
+manpage(void) {
+	pid_t pid;
+	int status;
+	char buf;
+	char *sh;
+
+	endwin();
+
+	sh = getenv("SHELL");
+	sh = sh ? sh : "/bin/sh";
+
+	pid = fork();
+	if (pid == 0)
+		execlp(sh, sh, "-c", "man zygo", NULL);
+	assert(pid != -1);
+	waitpid(pid, &status, 0);
+	if (WEXITSTATUS(status) != 0) {
+		fprintf(stderr, "%s", "could not find manpage, press enter to continue...");
+		fread(&buf, sizeof(char), 1, stdin);
+	}
+
+	initscr();
+	draw_page();
+	draw_bar();
 }
 
 void
@@ -788,6 +819,10 @@ run(void) {
 			}
 			draw_bar();
 		} else {
+			/* Restrict keys for starting menu */
+			if (!current && !(isdigit((int)c) || c == ':' || c == 'h' || c == 'q'))
+				continue;
+
 			switch (c) {
 			case KEY_DOWN:
 			case 'j':
@@ -858,6 +893,9 @@ run(void) {
 				draw_page();
 				draw_bar();
 				break;
+			case 'h':
+				manpage();
+				break;
 			/* link numbers */
 			case '0': case '1': case '2': case '3': case '4':
 			case '5': case '6': case '7': case '8': case '9':
@@ -895,7 +933,7 @@ run(void) {
 		continue;
 
 gonum:
-		if (atoi(ui.arg) >= page->lastid || atoi(ui.arg) < 1)
+		if (atoi(ui.arg) > page->lastid || atoi(ui.arg) < 1)
 			error("no such link: %d", atoi(ui.arg));
 		else
 			go(list_idget(&page, atoi(ui.arg)), 1);
@@ -922,23 +960,33 @@ sighandler(int signal) {
 int
 main(int argc, char *argv[]) {
 	Elem *target;
-	char *targeturi;
 	int i;
+	Elem start[] = {
+		{0, 'i', "Welcome to zygo"},
+		{0, 'i', ""},
+		{0, '1', "Type '1' to follow this link to gopher://hhvn.uk/1/git/o/zygo.", "/git/o/zygo", "hhvn.uk", "70"},
+		{0, 'i', "Type ':' followed by a URI to go to said URI."},
+		{0, 'i', "Type 'h' to read the man page"},
+		{0, 'i', "Type 'q' to quit"},
+		{0, 'i', ""},
+		{0, 'i', "Only certain commands can be run if not veiwing a gopher menu."},
+		{0, 'i', ""},
+		{0, 'i', NULL},
+	};
+
+	for (i = 0; start[i].desc; i++)
+		list_append(&page, &start[i]);
 
 	switch (argc) {
 	case 2:
-		targeturi = argv[1];
-		break;
+		target = uritoelem(argv[1]);
+		go(target, 1);
 	case 1:
-		targeturi = starturi;
 		break;
 	default:
 		fprintf(stderr, "usage: %s [uri]\n", basename(argv[0]));
 		exit(EXIT_FAILURE);
 	}
-
-	target = uritoelem(targeturi);
-	go(target, 1);
 
 	setlocale(LC_ALL, "");
 	initscr();

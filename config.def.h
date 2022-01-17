@@ -1,4 +1,3 @@
-static char *starturi = "gopher://hhvn.uk/1/git/o/zygo";
 static char *plumber = "xdg-open";
 static int parallelplumb = 0;
 static int stimeout = 5;

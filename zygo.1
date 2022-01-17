@@ -1,0 +1,87 @@
+.\" zygo/zygo.1
+.\"
+.\" Copyright (c) 2022 hhvn <dev@hhvn.uk>
+.\"
+.\" Permission to use, copy, modify, and distribute this software for any
+.\" purpose with or without fee is hereby granted, provided that the above
+.\" copyright notice and this permission notice appear in all copies.
+.\"
+.\" THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+.\" WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+.\" MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+.\" ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+.\" WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+.\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+.\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+.Dd COMMIT
+.Dt zygo 1
+.Os
+.Sh Name
+.Nm zygo
+.Nd ncurses gopher client
+.Sh SYNOPSIS
+.Nm
+.Op Ar uri
+.Sh DESCRIPTION
+.Nm
+is a rewrite of
+.Xr cgo 1
+that tidies up a lot of stuff,
+and has pager functionality using ncurses.
+.Nm
+supports gopher over tls, although it may be buggy.
+The user may attempt to downgrade any tls connection if it fails.
+.Sh INPUT
+.Nm
+is constantly reading input.
+This input can be either an id to a link
+(seen to the left of a line) or a command.
+If a command requires an argument,
+or the id is ambiguous,
+the user must press enter.
+.Sh COMMANDS
+.Bl -compact -tag -width "       "
+.It : Ar uri
+Go to
+.Ar uri "."
+.It / Ar query
+Search forwards for
+.Ar query "."
+.It ? Ar query
+Search backwards for
+.Ar query "."
+.It n
+Search forwards with already present query.
+.It N
+Search backwards with already present query.
+.It a Ar path
+Append
+.Ar path
+to the current uri.
+.It j
+Scroll down one line.
+.It ^D
+Scroll down half a page.
+.It k
+Scroll up one line.
+.It ^U
+Scroll up half a page.
+.It q
+Quit.
+.It <
+Go back in history.
+.It *
+Reload page.
+.It g
+Go to top of page.
+.It G
+Go to bottom of page.
+.It r
+Go to root selector of current gopherhole.
+.It 
+.El
+.Sh SEE OTHER
+.Xr cgo 1
+.Sh AUTHOR
+.An hhvn Aq Mt dev@hhvn.uk 
