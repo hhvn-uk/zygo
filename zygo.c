@@ -281,20 +281,22 @@ gophertoelem(Elem *from, const char *line) {
 
 	for (p = tmp, seg = SEGDESC; *p; p++) {
 		if (*p == '\t') {
-			if (seg == SEGPORT)
-				goto invalid;
 			*p = '\0';
 			switch (seg) {
 			case SEGDESC:     ret->desc     = estrdup(tmp); break;
 			case SEGSELECTOR: ret->selector = estrdup(tmp); break;
 			case SEGSERVER:   ret->server   = estrdup(tmp); break;
+			case SEGPORT:     ret->port     = estrdup(tmp); break;
 			}
 			tmp = p + 1;
 			seg++;
 		}
 	}
 
-	ret->port = estrdup(tmp);
+	/* ret->port will only be set on gopher+ menus with 
+	 * the above loop, set it here for non-gopher+ */
+	if (!ret->port)
+		ret->port = estrdup(tmp);
 	if (from && from->tls &&
 			strcmp(ret->server, from->server) == 0 &&
 			strcmp(ret->port, from->port) == 0)
@@ -303,10 +305,12 @@ gophertoelem(Elem *from, const char *line) {
 		ret->tls = 0;
 
 	free(dup);
-	return ret;
 
-invalid:
-	free(dup);
+	if (ret->desc != NULL &&
+			ret->server != NULL &&
+			ret->port != NULL)
+		return ret;
+
 	free(ret->desc);
 	free(ret->selector);
 	free(ret->server);
