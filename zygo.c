@@ -114,28 +114,22 @@ elem_free(Elem *e) {
 }
 
 Elem *
-elem_create(int tls, char type, char *desc, char *selector, char *server, char *port) {
+elem_dup(Elem *e) {
 	Elem *ret;
 
+	if (e) {
 #define DUP(str) str ? estrdup(str) : NULL
-	ret = emalloc(sizeof(Elem));
-	ret->tls = tls;
-	ret->type = type;
-	ret->desc = DUP(desc);
-	ret->selector = DUP(selector);
-	ret->server = DUP(server);
-	ret->port = DUP(port);
+		ret = emalloc(sizeof(Elem));
+		ret->tls = e->tls;
+		ret->type = e->type;
+		ret->desc = DUP(e->desc);
+		ret->selector = DUP(e->selector);
+		ret->server = DUP(e->server);
+		ret->port = DUP(e->port);
 #undef DUP
+	} else ret = NULL;
 
 	return ret;
-}
-
-Elem *
-elem_dup(Elem *e) {
-	if (e)
-		return elem_create(e->tls, e->type, e->desc, e->selector, e->server, e->port);
-	else
-		return NULL;
 }
 
 char *

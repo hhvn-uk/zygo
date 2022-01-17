@@ -75,7 +75,6 @@ char *estrdup(const char *str);
 
 /* Elem functions */
 void elem_free(Elem *e);
-Elem *elem_create(int tls, char type, char *desc, char *selector, char *server, char *port);
 Elem *elem_dup(Elem *e);
 Elem *uritoelem(const char *uri);
 Elem *gophertoelem(Elem *from, const char *line);
