@@ -17,7 +17,7 @@
 .Dd COMMIT
 .Dt zygo 1
 .Os
-.Sh Name
+.Sh NAME
 .Nm zygo
 .Nd ncurses gopher client
 .Sh SYNOPSIS
@@ -33,6 +33,28 @@ and has pager functionality using ncurses.
 .Nm
 supports gopher over tls, although it may be buggy.
 The user may attempt to downgrade any tls connection if it fails.
+.Ss Name
+.Nm
+is taken from the first four letters of the gopher genus Zygogeomys.
+.Ss Plumber
+The plumber is a program that is run with a link as the first argument when
+.Nm
+cannot display a link. The program used for this may be changed in
+.Ar config.h ","
+or by using the
+.Fl p
+flag.
+
+By default
+.Nm
+will temporarily leave curses mode to allow the plumber access to the terminal.
+This can be disabled by setting the
+.Ar parallelplumb
+variable in
+.Ar config.h ","
+or by using the
+.Fl P
+flag.
 .Sh OPTIONS
 .Bl -compact -tag -width "-p plumber"
 .It Fl v
