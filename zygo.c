@@ -832,7 +832,8 @@ run(void) {
 				draw_page();
 				break;
 			case 'G':
-				ui.scroll = list_len(&page) - LINES;
+				if (list_len(&page) > LINES)
+					ui.scroll = list_len(&page) - LINES;
 				draw_page();
 				break;
 			case 'n':
