@@ -26,6 +26,7 @@
 #include <locale.h>
 #include <signal.h>
 #include <unistd.h>
+#include <regex.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <sys/wait.h>
@@ -49,7 +50,9 @@ struct {
 	wint_t input[BUFLEN];
 	char cmd;
 	char *arg;
-} ui = {0, 0};
+	int search;
+	regex_t regex;
+} ui = {.scroll = 0, .wantinput = 0, .search = 0};
 
 /*
  * Memory functions
@@ -484,7 +487,13 @@ go(Elem *e, int mhist) {
 		list_append(&history, current);
 	elem_free(current);
 	current = dup;
+
 	ui.scroll = 0;
+	if (ui.search) {
+		regfree(&ui.regex);
+		ui.search = 0;
+	}
+
 	return 0;
 }
 
@@ -536,6 +545,57 @@ getscheme(Elem *e) {
 			return &scheme[i];
 }
 
+void
+find(int backward) {
+	enum {mfirst, mclose, mlast};
+	struct {
+		size_t pos;
+		int found;
+	} matches[] = {
+		[mfirst] = {.found = 0},
+		[mclose] = {.found = 0},
+		[mlast]  = {.found = 0},
+	};
+	size_t i;
+	size_t want;
+
+	if (!ui.search) {
+		error("no search");
+		return;
+	}
+
+	for (i = 0; i < list_len(&page); i++) {
+		if (regexec(&ui.regex, list_get(&page, i)->desc, 0, NULL, 0) == 0) {
+			matches[mlast].found = 1;
+			matches[mlast].pos = i;
+			if (!matches[mfirst].found) {
+				matches[mfirst].found = 1;
+				matches[mfirst].pos = i;
+			}
+			if (!matches[mclose].found && ((backward && i < ui.scroll) || (!backward && i > ui.scroll))) {
+				matches[mclose].found = 1;
+				matches[mclose].pos = i;
+			}
+		}
+	}
+
+	if (matches[mfirst].found == 0 &&
+			matches[mclose].found == 0 &&
+			matches[mlast].found == 0) {
+		error("no match");
+		return;
+	}
+
+	if (matches[mclose].found)
+		want = matches[mclose].pos;
+	else if (backward && matches[mlast].found)
+		want = matches[mlast].pos;
+	else
+		want = matches[mfirst].pos;
+
+	ui.scroll = want;
+}
+
 int
 draw_line(Elem *e, int maxlines) {
 	int lc, cc;
@@ -549,7 +609,12 @@ draw_line(Elem *e, int maxlines) {
 	attron(COLOR_PAIR(getscheme(e)->pair));
 	printw("%s ", getscheme(e)->name);
 	attroff(A_COLOR);
-	printw("| %s\n", e->desc);
+	printw("| ");
+	if (ui.search && regexec(&ui.regex, e->desc, 0, NULL, 0) == 0)
+		attron(A_REVERSE);
+	printw("%s", e->desc);
+	attroff(A_REVERSE);
+	printw("\n");
 	return 1;
 }
 
@@ -620,6 +685,7 @@ run(void) {
 	int ret;
 	size_t il;
 	Elem *e;
+	char tmperror[BUFLEN];
 
 	draw_page();
 	draw_bar();
@@ -657,7 +723,23 @@ run(void) {
 						candraw = 0;
 					}
 					break;
+				case '/':
+				case '?':
+					if (ui.search) {
+						regfree(&ui.regex);
+						ui.search = 0;
+					}
 
+					if (ui.input[0] != '\0') {
+						if ((ret = regcomp(&ui.regex, ui.arg, regexflags)) != 0) {
+							regerror(ret, &ui.regex, (char *)&tmperror, sizeof(tmperror));
+							error("could not compile regex '%s': %s", ui.arg, tmperror);
+						} else {
+							ui.search = 1;
+							find(ui.cmd == '?' ? 1 : 0);
+						}
+					}
+					break;
 				}
 				ui.wantinput = 0;
 				draw_page();
@@ -753,6 +835,11 @@ run(void) {
 				ui.scroll = list_len(&page) - LINES;
 				draw_page();
 				break;
+			case 'n':
+			case 'N':
+				find(c == 'N' ? 1 : 0);
+				draw_page();
+				break;
 			/* link numbers */
 			case '0': case '1': case '2': case '3': case '4':
 			case '5': case '6': case '7': case '8': case '9':
@@ -768,6 +855,7 @@ run(void) {
 			/* commands with arg */
 			case ':':
 			case '+':
+			case '/':
 				ui.cmd = (char)c;
 				ui.wantinput = 1;
 				ui.input[0] = '\0';
