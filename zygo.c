@@ -434,6 +434,7 @@ int
 go(Elem *e, int mhist) {
 	char line[BUFLEN];
 	char *sh, *arg, *uri;
+	char *search;
 	Elem *elem;
 	Elem *dup = elem_dup(e); /* elem may be part of page */
 	Elem missing = {0, '3', "Full contents not received."};
@@ -443,7 +444,7 @@ go(Elem *e, int mhist) {
 
 	if (!e) return -1;
 
-	if (e->type != '1' && e->type != '7' && e->type != '+') {
+	if (dup->type != '1' && dup->type != '7' && dup->type != '+') {
 		/* call mario */
 		uri = elemtouri(e);
 		arg = emalloc(strlen(plumber) + strlen(uri) + 2);
@@ -473,6 +474,18 @@ go(Elem *e, int mhist) {
 		return -1;
 	}
 
+	if (dup->type == '7' && !strchr(dup->selector, '\t')) {
+		if ((search = prompt("Query")) == NULL) {
+			elem_free(dup);
+			return -1;
+		}
+
+		free(dup->selector);
+		dup->selector = emalloc(strlen(e->selector) + strlen(search) + 2);
+		snprintf(dup->selector, strlen(e->selector) + strlen(search) + 2,
+				"%s\t%s", e->selector, search);
+	}
+
 	if ((ret = net_connect(e)) == -1) {
 		if (dup->tls) {
 			attron(A_BOLD | COLOR_PAIR(PAIR_CMD));
@@ -490,10 +503,11 @@ go(Elem *e, int mhist) {
 		}
 
 		timeout(-1);
+		elem_free(dup);
 		return ret;
 	}
 
-	net_write(e->selector, strlen(e->selector));
+	net_write(dup->selector, strlen(dup->selector));
 	net_write("\r\n", 2);
 
 	list_free(&page);
@@ -731,6 +745,50 @@ syncinput(void) {
 	len = wcstombs(NULL, ui.input, 0) + 1;
 	ui.arg = emalloc(len);
 	wcstombs(ui.arg, ui.input, len);
+}
+
+char *
+prompt(char *prompt) {
+	wint_t c;
+	int ret;
+	size_t il;
+	int y, x;
+
+	ui.input[il = 0] = '\0';
+	goto start;
+	while ((ret = get_wch(&c)) != ERR) {
+		if (c == KEY_RESIZE) {
+start:
+			draw_page();
+			move(LINES - 1, 0);
+			clrtoeol();
+			for (x = 0; x < COLS; x++)
+				addch(' ');
+			move(LINES - 1, 1);
+			syncinput();
+			printw("%s: %s", prompt, ui.arg);
+		} else if (c == 27 /* escape */) {
+			return NULL;
+		} else if (c == '\n') {
+			syncinput();
+			return ui.arg;
+		} else if (c == KEY_BACKSPACE || c == 127) {
+			if (il != 0) {
+				getyx(stdscr, y, x);
+				move(LINES - 1, x - 1);
+				addch(' ');
+				move(LINES - 1, x - 1);
+				refresh();
+				ui.input[--il] = '\0';
+			}
+		} else if (c >= 32 && c < KEY_CODE_YES) {
+			addnwstr(&c, 1);
+			ui.input[il++] = c;
+			ui.input[il] = '\0';
+		}
+	}
+
+	return ui.arg;
 }
 
 /*

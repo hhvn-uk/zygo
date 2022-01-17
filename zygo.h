@@ -101,6 +101,7 @@ int draw_line(Elem *e, int maxlines);
 void draw_page(void);
 void draw_bar(void);
 void syncinput(void);
+char *prompt(char *prompt);
 
 /* Main loop */
 void run(void);
