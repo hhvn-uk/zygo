@@ -740,6 +740,14 @@ run(void) {
 						}
 					}
 					break;
+				case 'a':
+					e = elem_dup(current);
+					e->selector = erealloc(e->selector, strlen(e->selector) + strlen(ui.arg) + 1);
+					/* should be safe.. I think */
+					strcat(e->selector, ui.arg);
+					go(e, 1);
+					elem_free(e);
+					break;
 				}
 				ui.wantinput = 0;
 				draw_page();
@@ -841,6 +849,15 @@ run(void) {
 				find(c == 'N' ? 1 : 0);
 				draw_page();
 				break;
+			case 'r':
+				e = elem_dup(current);
+				free(e->selector);
+				e->selector = strdup("");
+				go(e, 1);
+				elem_free(e);
+				draw_page();
+				draw_bar();
+				break;
 			/* link numbers */
 			case '0': case '1': case '2': case '3': case '4':
 			case '5': case '6': case '7': case '8': case '9':
@@ -857,6 +874,7 @@ run(void) {
 			case ':':
 			case '+':
 			case '/':
+			case 'a':
 				ui.cmd = (char)c;
 				ui.wantinput = 1;
 				ui.input[0] = '\0';
