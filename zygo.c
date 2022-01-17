@@ -419,7 +419,9 @@ go(Elem *e, int mhist) {
 	char *sh, *arg, *uri;
 	Elem *elem;
 	Elem *dup = elem_dup(e); /* elem may be part of page */
+	Elem missing = {0, '3', "Full contents not received."};
 	int ret;
+	int gotall = 0;
 	pid_t pid;
 
 	if (e->type != '1' && e->type != '7' && e->type != '+') {
@@ -478,10 +480,17 @@ go(Elem *e, int mhist) {
 
 	list_free(&page);
 	while (readline(line, sizeof(line))) {
-		elem = gophertoelem(dup, line);
-		list_append(&page, elem);
-		elem_free(elem);
+		if (strcmp(line, ".") == 0) {
+			gotall = 1;
+		} else {
+			elem = gophertoelem(dup, line);
+			list_append(&page, elem);
+			elem_free(elem);
+		}
 	}
+
+	if (!gotall)
+		list_append(&page, &missing);
 
 	if (current && mhist)
 		list_append(&history, current);
@@ -564,7 +573,7 @@ find(int backward) {
 		return;
 	}
 
-	for (i = 0; i < list_len(&page); i++) {
+	for (i = 0; i <= list_len(&page); i++) {
 		if (regexec(&ui.regex, list_get(&page, i)->desc, 0, NULL, 0) == 0) {
 			matches[mlast].found = 1;
 			matches[mlast].pos = i;
@@ -629,8 +638,8 @@ draw_page(void) {
 
 	if (page) {
 		move(0, 0);
-		zygo_assert(ui.scroll < list_len(&page));
-		for (i = ui.scroll; i < list_len(&page) - 1 && y < LINES - 1; i++)
+		zygo_assert(ui.scroll <= list_len(&page));
+		for (i = ui.scroll; i <= list_len(&page) - 1 && y < LINES - 1; i++)
 			y += draw_line(list_get(&page, i), 1);
 		for (; y < LINES - 1; y++) {
 			move(y, 0);
@@ -962,6 +971,8 @@ main(int argc, char *argv[]) {
 	Elem *target;
 	int i;
 	Elem start[] = {
+		{0, '3', "No URI specified, or unable to locate URI."},
+		{0, 'i', ""},
 		{0, 'i', "Welcome to zygo"},
 		{0, 'i', ""},
 		{0, '1', "Type '1' to follow this link to gopher://hhvn.uk/1/git/o/zygo.", "/git/o/zygo", "hhvn.uk", "70"},
@@ -970,7 +981,6 @@ main(int argc, char *argv[]) {
 		{0, 'i', "Type 'q' to quit"},
 		{0, 'i', ""},
 		{0, 'i', "Only certain commands can be run if not veiwing a gopher menu."},
-		{0, 'i', ""},
 		{0, 'i', NULL},
 	};
 
