@@ -247,6 +247,9 @@ uritoelem(const char *uri) {
 	if (!ret->server) {
 		ret->server = estrdup(tmp);
 		tmp += strlen(tmp);
+	} else if (!ret->port) {
+		ret->port = estrdup(tmp);
+		tmp += strlen(tmp);
 	}
 
 	ret->port     = ret->port     ? ret->port     : estrdup("70");
