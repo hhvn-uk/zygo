@@ -769,7 +769,6 @@ start:
 			clrtoeol();
 			for (x = 0; x < COLS; x++)
 				addch(' ');
-			move(LINES - 1, 1);
 			syncinput();
 			printw("%s: %s", prompt, ui.arg);
 		} else if (c == 27 /* escape */) {
