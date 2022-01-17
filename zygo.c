@@ -992,7 +992,7 @@ sighandler(int signal) {
 
 void
 usage(char *argv0) {
-	fprintf(stderr, "usage: %s [-kv] [uri]\n", basename(argv0));
+	fprintf(stderr, "usage: %s [-kPv] [-p plumber] [uri]\n", basename(argv0));
 	exit(EXIT_FAILURE);
 }
 
@@ -1031,6 +1031,19 @@ main(int argc, char *argv[]) {
 #else
 					error("TLS support not compiled");
 #endif /* TLS */
+					break;
+				case 'p':
+					if (*(s+1)) {
+						plumber = s + 1;
+						s += strlen(s) - 1;
+					} else if (i + 1 != argc) {
+						plumber = argv[++i];
+					} else {
+						usage(argv[0]);
+					}
+					break;
+				case 'P':
+					parallelplumb = 1;
 					break;
 				case 'v':
 					fprintf(stderr, "zygo %s\n", COMMIT);

@@ -34,11 +34,16 @@ and has pager functionality using ncurses.
 supports gopher over tls, although it may be buggy.
 The user may attempt to downgrade any tls connection if it fails.
 .Sh OPTIONS
-.Bl -compact -tag
+.Bl -compact -tag -width "-p plumber"
 .It Fl v
 Print version info.
 .It Fl k
 Turn off certificate checking for TLS.
+.It Fl p Ar plumber
+Set the plumber to
+.Ar plumber "."
+.It Fl P
+Do not wait for the plumber to exit.
 .Sh INPUT
 .Nm
 is constantly reading input.
