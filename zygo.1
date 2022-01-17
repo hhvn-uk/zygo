@@ -22,6 +22,7 @@
 .Nd ncurses gopher client
 .Sh SYNOPSIS
 .Nm
+.Op Fl kv
 .Op Ar uri
 .Sh DESCRIPTION
 .Nm
@@ -32,6 +33,12 @@ and has pager functionality using ncurses.
 .Nm
 supports gopher over tls, although it may be buggy.
 The user may attempt to downgrade any tls connection if it fails.
+.Sh OPTIONS
+.Bl -compact -tag
+.It Fl v
+Print version info.
+.It Fl k
+Turn off certificate checking for TLS.
 .Sh INPUT
 .Nm
 is constantly reading input.

@@ -36,10 +36,7 @@
 List *history = NULL;
 List *page = NULL;
 Elem *current = NULL;
-
-int config[] = {
-	[CONF_TLS_VERIFY] = 1,
-};
+int insecure = 0;
 
 struct {
 	int scroll;
@@ -993,9 +990,16 @@ sighandler(int signal) {
 	}
 }
 
+void
+usage(char *argv0) {
+	fprintf(stderr, "usage: %s [-kv] [uri]\n", basename(argv0));
+	exit(EXIT_FAILURE);
+}
+
 int
 main(int argc, char *argv[]) {
-	Elem *target;
+	Elem *target = NULL;
+	char *s;
 	int i;
 	Elem start[] = {
 		{0, '3', "No URI specified, or unable to locate URI."},
@@ -1014,15 +1018,31 @@ main(int argc, char *argv[]) {
 	for (i = 0; start[i].desc; i++)
 		list_append(&page, &start[i]);
 
-	switch (argc) {
-	case 2:
-		target = uritoelem(argv[1]);
-		go(target, 1);
-	case 1:
-		break;
-	default:
-		fprintf(stderr, "usage: %s [uri]\n", basename(argv[0]));
-		exit(EXIT_FAILURE);
+	for (i = 1; i < argc; i++) {
+		if ((*argv[i] == '-' && *(argv[i]+1) == '\0') ||
+				(*argv[i] != '-' && target)) {
+			usage(argv[0]);
+		} else if (*argv[i] == '-') {
+			for (s = argv[i]+1; *s; s++) {
+				switch (*s) {
+				case 'k':
+#ifdef TLS
+					insecure = 1;
+#else
+					error("TLS support not compiled");
+#endif /* TLS */
+					break;
+				case 'v':
+					fprintf(stderr, "zygo %s\n", COMMIT);
+					exit(EXIT_SUCCESS);
+				default:
+					usage(argv[0]);
+				}
+			}
+		} else {
+			target = uritoelem(argv[argc-1]);
+			go(target, 1);
+		}
 	}
 
 	setlocale(LC_ALL, "");

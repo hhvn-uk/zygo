@@ -31,7 +31,7 @@ net_connect(Elem *e) {
 			goto fail;
 		}
 
-		if (!config[CONF_TLS_VERIFY]) {
+		if (insecure) {
 			tls_config_insecure_noverifycert(conf);
 			tls_config_insecure_noverifyname(conf);
 		}

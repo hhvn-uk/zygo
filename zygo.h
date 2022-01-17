@@ -50,10 +50,6 @@ struct Scheme {
 };
 
 enum {
-	CONF_TLS_VERIFY = 'k',
-};
-
-enum {
 	PAIR_BAR = 1,
 	PAIR_URI = 2,
 	PAIR_CMD = 3,
@@ -66,7 +62,7 @@ enum {
 extern List *history;
 extern List *page;
 extern Elem *current;
-extern int config[];
+extern int insecure;
 
 /* Memory functions */
 void *emalloc(size_t size);
