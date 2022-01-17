@@ -101,6 +101,7 @@ int net_close(void);
 /* UI functions */
 void error(char *format, ...);
 Scheme *getscheme(Elem *e);
+void find(int backward);
 int draw_line(Elem *e, int maxlines);
 void draw_page(void);
 void draw_bar(void);
