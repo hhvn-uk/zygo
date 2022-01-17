@@ -747,6 +747,12 @@ run(void) {
 	draw_page();
 	draw_bar();
 
+#define checkcurrent() \
+	if (!current || !current->server || !current->port) { \
+		error("%c command can only be used on remote gopher menus", c); \
+		break; \
+	}
+
 	/* get_wch does refresh() for us */
 	while ((ret = get_wch(&c)) != ERR) {
 		if (!ui.candraw || ui.error) {
@@ -846,10 +852,6 @@ run(void) {
 			}
 			draw_bar();
 		} else {
-			/* Restrict keys for starting menu */
-			if (!current && !(isdigit((int)c) || c == ':' || c == 'h' || c == 'q'))
-				continue;
-
 			switch (c) {
 			case KEY_DOWN:
 			case 'j':
@@ -894,6 +896,7 @@ run(void) {
 				}
 				break;
 			case '*':
+				checkcurrent();
 				go(current, 0);
 				draw_page();
 				break;
@@ -912,6 +915,7 @@ run(void) {
 				draw_page();
 				break;
 			case 'r':
+				checkcurrent();
 				e = elem_dup(current);
 				free(e->selector);
 				e->selector = strdup("");
@@ -940,6 +944,8 @@ run(void) {
 			case '+':
 			case '/':
 			case 'a':
+				if (c == 'a' || c == '+')
+					checkcurrent();
 				ui.cmd = (char)c;
 				ui.wantinput = 1;
 				ui.input[0] = '\0';
@@ -968,6 +974,8 @@ gonum:
 		draw_page();
 		draw_bar();
 	}
+
+#undef checkcurrent
 }
 
 void
