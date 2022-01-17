@@ -37,7 +37,6 @@ List *history = NULL;
 List *page = NULL;
 Elem *current = NULL;
 
-int candraw = 1;
 int config[] = {
 	[CONF_TLS_VERIFY] = 1,
 };
@@ -52,7 +51,14 @@ struct {
 	char *arg;
 	int search;
 	regex_t regex;
-} ui = {.scroll = 0, .wantinput = 0, .search = 0};
+	int error;
+	char errorbuf[BUFLEN];
+	int candraw;
+} ui = {.scroll = 0,
+	.wantinput = 0,
+	.search = 0,
+	.error = 0,
+	.candraw = 1};
 
 /*
  * Memory functions
@@ -437,6 +443,8 @@ go(Elem *e, int mhist) {
 	int gotall = 0;
 	pid_t pid;
 
+	if (!e) return -1;
+
 	if (e->type != '1' && e->type != '7' && e->type != '+') {
 		/* call mario */
 		uri = elemtouri(e);
@@ -469,9 +477,9 @@ go(Elem *e, int mhist) {
 
 	if ((ret = net_connect(e)) == -1) {
 		if (dup->tls) {
-			printw("| ");
-			attron(A_BOLD);
-			printw("Try again in cleartext? ");
+			attron(A_BOLD | COLOR_PAIR(PAIR_CMD));
+			printw("  Try again in cleartext? ");
+			curs_set(1);
 			attroff(A_BOLD);
 			refresh();
 			timeout(stimeout * 1000);
@@ -484,7 +492,6 @@ go(Elem *e, int mhist) {
 		}
 
 		timeout(-1);
-		candraw = 1;
 		return ret;
 	}
 
@@ -538,18 +545,13 @@ void
 error(char *format, ...) {
 	va_list ap;
 
-	move(LINES - 1, 0);
-	clrtoeol();
-	attron(COLOR_PAIR(PAIR_ERR));
-	addstr(" error: ");
+	ui.error = 1;
 
 	va_start(ap, format);
-	vw_printw(stdscr, format, ap);
+	vsnprintf(ui.errorbuf, sizeof(ui.errorbuf), format, ap);
 	va_end(ap);
 
-	addstr(" ");
-	refresh();
-	candraw = 0;
+	draw_bar();
 	alarm(stimeout);
 }
 
@@ -644,7 +646,7 @@ void
 draw_page(void) {
 	int y = 0, i;
 
-	if (!candraw)
+	if (!ui.candraw)
 		return;
 
 	attroff(A_COLOR);
@@ -665,7 +667,7 @@ void
 draw_bar(void) {
 	int savey, savex, x;
 
-	if (!candraw)
+	if (!ui.candraw)
 		return;
 
 	move(LINES - 1, 0);
@@ -676,7 +678,11 @@ draw_bar(void) {
 	}
 	attron(COLOR_PAIR(PAIR_BAR));
 	printw(" ");
-	if (ui.wantinput) {
+	if (ui.error) {
+		curs_set(0);
+		attron(COLOR_PAIR(PAIR_ERR));
+		printw("%s", ui.errorbuf);
+	} else if (ui.wantinput) {
 		curs_set(1);
 		if (ui.wantinput == 1) {
 			attron(COLOR_PAIR(PAIR_CMD));
@@ -745,8 +751,9 @@ run(void) {
 
 	/* get_wch does refresh() for us */
 	while ((ret = get_wch(&c)) != ERR) {
-		if (!candraw) {
-			candraw = 1;
+		if (!ui.candraw || ui.error) {
+			ui.candraw = 1;
+			ui.error = 0;
 			draw_page();
 			draw_bar();
 		}
@@ -773,7 +780,7 @@ run(void) {
 						clrtoeol();
 						printw("%s", elemtouri(list_idget(&page, atoi(ui.arg))));
 						curs_set(0);
-						candraw = 0;
+						ui.candraw = 0;
 					}
 					break;
 				case '/':
@@ -969,7 +976,8 @@ void
 sighandler(int signal) {
 	switch (signal) {
 	case SIGALRM:
-		candraw = 1;
+		ui.candraw = 1;
+		ui.error = 0;
 		draw_bar();
 		refresh();
 		break;
