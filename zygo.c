@@ -767,8 +767,6 @@ start:
 			draw_page();
 			move(LINES - 1, 0);
 			clrtoeol();
-			for (x = 0; x < COLS; x++)
-				addch(' ');
 			syncinput();
 			printw("%s: %s", prompt, ui.arg);
 		} else if (c == 27 /* escape */) {
