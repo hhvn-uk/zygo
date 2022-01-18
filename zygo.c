@@ -350,6 +350,8 @@ list_append(List **l, Elem *e) {
 	elem = elem_dup(e);
 	if (elem->type != 'i' && elem->type != '3')
 		elem->id = ++(*l)->lastid;
+	else
+		elem->id = 0;
 
 	if (!(*l)->elems) {
 		(*l)->len = 1;
@@ -961,6 +963,7 @@ run(void) {
 				checkcurrent();
 				go(current, 0);
 				draw_page();
+				draw_bar();
 				break;
 			case 'g':
 				ui.scroll = 0;

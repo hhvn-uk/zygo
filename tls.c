@@ -3,15 +3,10 @@
 #include <tls.h>
 #include "zygo.h"
 
-static struct tls *ctx = NULL;
-static struct tls_config *conf = NULL;
-static int fd;
-static int tls;
-
-#define net_free() \
-	if (ai) freeaddrinfo(ai); \
-	if (ctx) { tls_free(ctx); ctx = NULL; } \
-	if (conf) { tls_config_free(conf); conf = NULL; }
+struct tls *ctx = NULL;
+struct tls_config *conf = NULL;
+int fd;
+int tls;
 
 int
 net_connect(Elem *e) {
@@ -63,6 +58,7 @@ net_connect(Elem *e) {
 			error("could not tls-ify connection to %s:%s", e->server, e->port);
 			goto fail;
 		}
+
 		if (tls_handshake(ctx) == -1) {
 			error("could not perform tls handshake with %s:%s", e->server, e->port);
 			goto fail;
@@ -73,7 +69,16 @@ net_connect(Elem *e) {
 	return 0;
 
 fail:
-	net_free();
+	if (ai)
+		freeaddrinfo(ai);
+	if (ctx) {
+		tls_free(ctx);
+		ctx = NULL;
+	}
+	if (conf) {
+		tls_config_free(conf);
+		conf = NULL;
+	}
 	return -1;
 }
 
@@ -99,11 +104,19 @@ net_write(void *buf, size_t count) {
 	int ret;
 
 	if (tls) {
-		do {
-			ret = tls_write(ctx, buf, count);
-		} while (ret == TLS_WANT_POLLIN || ret == TLS_WANT_POLLOUT);
-		if (ret == -1)
-			error("tls_write(): %s", tls_error(ctx));
+		while (count > 0) {
+			switch (ret = tls_write(ctx, buf, count)) {
+			case TLS_WANT_POLLIN:
+			case TLS_WANT_POLLOUT:
+				break;
+			case -1:
+				error("tls_write(): %s", tls_error(ctx));
+				break;
+			default:
+				buf += ret;
+				count -= ret;
+			}
+		}
 	} else {
 		ret = write(fd, buf, count);
 	}
@@ -120,7 +133,9 @@ net_close(void) {
 			ret = tls_close(ctx);
 		} while (ret == TLS_WANT_POLLIN || TLS_WANT_POLLOUT);
 		tls_free(ctx);
+		ctx = NULL;
 		tls_config_free(conf);
+		conf = NULL;
 	}
 
 	return close(fd);

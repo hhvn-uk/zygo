@@ -30,9 +30,11 @@ is a rewrite of
 .Xr cgo 1
 that tidies up a lot of stuff,
 and has pager functionality using ncurses.
+.Ss TLS
 .Nm
-supports gopher over tls, although it may be buggy.
-The user may attempt to downgrade any tls connection if it fails.
+supports gopher over TLS using the gophers:// uri schema.
+If a gopher menu is accessed over TLS, 
+any links with the same server and port will be accessed over TLS.
 .Ss Name
 .Nm
 is taken from the first four letters of the gopher genus Zygogeomys.
