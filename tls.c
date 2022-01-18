@@ -9,7 +9,7 @@ int fd;
 int tls;
 
 int
-net_connect(Elem *e) {
+net_connect(Elem *e, int silent) {
 	struct addrinfo *ai = NULL;
 	int ret;
 
@@ -22,7 +22,8 @@ net_connect(Elem *e) {
 			tls_free(ctx);
 
 		if ((conf = tls_config_new()) == NULL) {
-			error("tls_config_new(): %s", tls_config_error(conf));
+			if (!silent)
+				error("tls_config_new(): %s", tls_config_error(conf));
 			goto fail;
 		}
 
@@ -32,35 +33,41 @@ net_connect(Elem *e) {
 		}
 
 		if ((ctx = tls_client()) == NULL) {
-			error("tls_client(): %s", tls_error(ctx));
+			if (!silent)
+				error("tls_client(): %s", tls_error(ctx));
 			goto fail;
 		}
 
 		if (tls_configure(ctx, conf) == -1) {
-			error("tls_configure(): %s", tls_error(ctx));
+			if (!silent)
+				error("tls_configure(): %s", tls_error(ctx));
 			goto fail;
 		}
 	}
 
 	if ((ret = getaddrinfo(e->server, e->port, NULL, &ai)) != 0 || ai == NULL) {
-		error("could not lookup %s:%s", e->server, e->port);
+		if (!silent)
+			error("could not lookup %s:%s", e->server, e->port);
 		goto fail;
 	}
 
 	if ((fd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) == -1 ||
 			connect(fd, ai->ai_addr, ai->ai_addrlen) == -1) {
-		error("could not connect to %s:%s", e->server, e->port);
+		if (!silent)
+			error("could not connect to %s:%s", e->server, e->port);
 		goto fail;
 	}
 
 	if (tls) {
 		if (tls_connect_socket(ctx, fd, e->server) == -1) {
-			error("could not tls-ify connection to %s:%s", e->server, e->port);
+			if (!silent)
+				error("could not tls-ify connection to %s:%s", e->server, e->port);
 			goto fail;
 		}
 
 		if (tls_handshake(ctx) == -1) {
-			error("could not perform tls handshake with %s:%s", e->server, e->port);
+			if (!silent)
+				error("could not perform tls handshake with %s:%s", e->server, e->port);
 			goto fail;
 		}
 	}

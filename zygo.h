@@ -88,7 +88,7 @@ size_t list_len(List **l);
 /* Network functions
  * only works with one fd/ctx at 
  * a time, reset at net_connect */
-int net_connect(Elem *e);
+int net_connect(Elem *e, int silent);
 int net_read(void *buf, size_t count);
 int net_write(void *buf, size_t count);
 int net_close(void);
@@ -108,7 +108,7 @@ void run(void);
 
 /* Misc */
 int readline(char *buf, size_t count);
-int go(Elem *e, int mhist);
+int go(Elem *e, int mhist, int notls);
 void sighandler(int signal);
 #ifdef ZYGO_STRLCAT
 #undef strlcat

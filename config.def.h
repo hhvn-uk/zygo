@@ -2,6 +2,8 @@ static char *plumber = "xdg-open";
 static int parallelplumb = 0;
 static int stimeout = 5;
 static int regexflags = REG_ICASE|REG_EXTENDED;
+static int autotls = 0; /* automatically try to 
+			   establish TLS connections? */
 
 static short bar_pair[2] = {-1,  0};
 static short uri_pair[2] = {0,   7};

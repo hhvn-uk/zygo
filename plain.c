@@ -8,18 +8,20 @@ static int fd;
 	if (ai) freeaddrinfo(ai)
 
 int
-net_connect(Elem *e) {
+net_connect(Elem *e, int silent) {
 	struct addrinfo *ai = NULL;
 	int ret;
 
 	if ((ret = getaddrinfo(e->server, e->port, NULL, &ai)) != 0 || ai == NULL) {
-		error("could not lookup %s:%s", e->server, e->port);
+		if (!silent)
+			error("could not lookup %s:%s", e->server, e->port);
 		goto fail;
 	}
 
 	if ((fd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) == -1 ||
 			connect(fd, ai->ai_addr, ai->ai_addrlen) == -1) {
-		error("could not connect to %s:%s", e->server, e->port);
+		if (!silent)
+			error("could not connect to %s:%s", e->server, e->port);
 		goto fail;
 	}
 

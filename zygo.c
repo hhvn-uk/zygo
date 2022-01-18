@@ -433,7 +433,7 @@ readline(char *buf, size_t count) {
 }
 
 int
-go(Elem *e, int mhist) {
+go(Elem *e, int mhist, int notls) {
 	char line[BUFLEN];
 	char *sh, *arg, *uri;
 	char *search;
@@ -471,7 +471,7 @@ go(Elem *e, int mhist) {
 			waitpid(pid, NULL, 0);
 			fprintf(stderr, "Press enter...");
 			fread(&line, sizeof(char), 1, stdin);
-			initscr();
+				initscr();
 		}
 		return -1;
 	}
@@ -490,11 +490,17 @@ go(Elem *e, int mhist) {
 
 	move(LINES - 1, 0);
 	clrtoeol();
-	printw("Connecting to %s:%s", dup->server, dup->port);
+	if (!dup->tls && autotls && !notls &&
+			(!current || strcmp(current->server, dup->server) != 0)) {
+		dup->tls = 1;
+		printw("Attempting a TLS connection with %s:%s", dup->server, dup->port);
+	} else {
+		printw("Connecting to %s:%s", dup->server, dup->port);
+	}
 	refresh();
 
-	if ((ret = net_connect(e)) == -1) {
-		if (dup->tls) {
+	if ((ret = net_connect(dup, e->tls != dup->tls)) == -1) {
+		if (dup->tls && dup->tls == e->tls) {
 			attron(A_BOLD | COLOR_PAIR(PAIR_CMD));
 			printw("  Try again in cleartext? ");
 			curs_set(1);
@@ -502,14 +508,15 @@ go(Elem *e, int mhist) {
 			refresh();
 			timeout(stimeout * 1000);
 			if (tolower(getch()) == 'y') {
-				elem = elem_dup(e);
-				elem->tls = 0;
-				ret = go(elem, mhist);
-				elem_free(elem);
+				dup->tls = 0;
+				ret = go(dup, mhist, 1);
 			}
+			timeout(-1);
+		} else if (dup->tls) {
+			dup->tls = 0;
+			ret = go(dup, mhist, 1);
 		}
 
-		timeout(-1);
 		elem_free(dup);
 		return ret;
 	}
@@ -836,7 +843,7 @@ run(void) {
 				switch (ui.cmd) {
 				case ':':
 					e = uritoelem(ui.arg);
-					go(e, 1);
+					go(e, 1, 0);
 					elem_free(e);
 					break;
 				case '+':
@@ -873,7 +880,7 @@ run(void) {
 					e->selector = erealloc(e->selector, strlen(e->selector) + strlen(ui.arg) + 1);
 					/* should be safe.. I think */
 					strcat(e->selector, ui.arg);
-					go(e, 1);
+					go(e, 1, 0);
 					elem_free(e);
 					break;
 				}
@@ -951,7 +958,7 @@ run(void) {
 			case '<':
 				if (history) {
 					e = list_pop(&history);
-					go(e, 0);
+					go(e, 0, 0);
 					free(e);
 					draw_page();
 					draw_bar();
@@ -961,7 +968,7 @@ run(void) {
 				break;
 			case '*':
 				checkcurrent();
-				go(current, 0);
+				go(current, 0, 0);
 				draw_page();
 				draw_bar();
 				break;
@@ -984,7 +991,7 @@ run(void) {
 				e = elem_dup(current);
 				free(e->selector);
 				e->selector = strdup("");
-				go(e, 1);
+				go(e, 1, 0);
 				elem_free(e);
 				draw_page();
 				draw_bar();
@@ -1034,7 +1041,7 @@ gonum:
 		if (atoi(ui.arg) > page->lastid || atoi(ui.arg) < 1)
 			error("no such link: %d", atoi(ui.arg));
 		else
-			go(list_idget(&page, atoi(ui.arg)), 1);
+			go(list_idget(&page, atoi(ui.arg)), 1, 0);
 		ui.wantinput = 0;
 		draw_page();
 		draw_bar();
@@ -1112,7 +1119,7 @@ main(int argc, char *argv[]) {
 			}
 		} else {
 			target = uritoelem(argv[argc-1]);
-			go(target, 1);
+			go(target, 1, 0);
 		}
 	}
 

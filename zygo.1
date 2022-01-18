@@ -34,7 +34,15 @@ and has pager functionality using ncurses.
 .Nm
 supports gopher over TLS using the gophers:// uri schema.
 If a gopher menu is accessed over TLS, 
-any links with the same server and port will be accessed over TLS.
+any links to the same server and port will be accessed over TLS.
+
+.Nm
+will also attempt to upgrade connections to TLS when it encounters a new server
+if the
+.Ar autotls
+variable is set in
+.Ar config.h "."
+(Off by default).
 .Ss Name
 .Nm
 is taken from the first four letters of the gopher genus Zygogeomys.
