@@ -638,14 +638,14 @@ find(int backward) {
 }
 
 int
-draw_line(Elem *e, int maxlines) {
+draw_line(Elem *e, int nwidth) {
 	int lc, cc;
 
 	attron(COLOR_PAIR(PAIR_EID));
 	if (e->type != 'i' && e->type != '3')
-		printw("% 3d ", e->id);
+		printw("%1$ *2$d ", e->id, nwidth + 1);
 	else
-		printw("    ");
+		printw("%1$ *2$s ", "", nwidth + 1);
 	attroff(A_COLOR);
 	attron(COLOR_PAIR(getscheme(e)->pair));
 	printw("%s ", getscheme(e)->name);
@@ -662,6 +662,7 @@ draw_line(Elem *e, int maxlines) {
 void
 draw_page(void) {
 	int y = 0, i;
+	int nwidth;
 
 	if (!ui.candraw)
 		return;
@@ -669,10 +670,11 @@ draw_page(void) {
 	attroff(A_COLOR);
 
 	if (page) {
+		nwidth = digits(page->lastid);
 		move(0, 0);
 		zygo_assert(ui.scroll <= list_len(&page));
 		for (i = ui.scroll; i <= list_len(&page) - 1 && y < LINES - 1; i++)
-			y += draw_line(list_get(&page, i), 1);
+			y += draw_line(list_get(&page, i), nwidth);
 		for (; y < LINES - 1; y++) {
 			move(y, 0);
 			clrtoeol();

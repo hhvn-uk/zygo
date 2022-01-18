@@ -97,7 +97,7 @@ int net_close(void);
 void error(char *format, ...);
 Scheme *getscheme(Elem *e);
 void find(int backward);
-int draw_line(Elem *e, int maxlines);
+int draw_line(Elem *e, int nwidth);
 void draw_page(void);
 void draw_bar(void);
 void syncinput(void);
