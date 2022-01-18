@@ -760,6 +760,7 @@ prompt(char *prompt) {
 	int y, x;
 
 	ui.input[il = 0] = '\0';
+	curs_set(1);
 	goto start;
 	while ((ret = get_wch(&c)) != ERR) {
 		if (c == KEY_RESIZE) {
