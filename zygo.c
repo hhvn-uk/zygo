@@ -569,7 +569,6 @@ error(char *format, ...) {
 	va_end(ap);
 
 	draw_bar();
-	alarm(stimeout);
 }
 
 Scheme *
@@ -1044,12 +1043,6 @@ gonum:
 void
 sighandler(int signal) {
 	switch (signal) {
-	case SIGALRM:
-		ui.candraw = 1;
-		ui.error = 0;
-		draw_bar();
-		refresh();
-		break;
 	case SIGCHLD:
 		while (waitpid(-1, NULL, WNOHANG) == 0);
 		break;
