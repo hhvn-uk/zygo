@@ -38,11 +38,12 @@ any links to the same server and port will be accessed over TLS.
 
 .Nm
 will also attempt to upgrade connections to TLS when it encounters a new server
-if the
+if it is invoked with the
+.Fl u
+flag, or if the
 .Ar autotls
 variable is set in
 .Ar config.h "."
-(Off by default).
 .Ss Name
 .Nm
 is taken from the first four letters of the gopher genus Zygogeomys.
@@ -76,6 +77,9 @@ Set the plumber to
 .Ar plumber "."
 .It Fl P
 Do not wait for the plumber to exit.
+.It Fl u
+Automatically upgrade connections to TLS.
+.It Fl
 .Sh INPUT
 .Nm
 is constantly reading input.

@@ -490,13 +490,17 @@ go(Elem *e, int mhist, int notls) {
 
 	move(LINES - 1, 0);
 	clrtoeol();
+#ifdef TLS
 	if (!dup->tls && autotls && !notls &&
 			(!current || strcmp(current->server, dup->server) != 0)) {
 		dup->tls = 1;
 		printw("Attempting a TLS connection with %s:%s", dup->server, dup->port);
 	} else {
+#endif /* TLS */
 		printw("Connecting to %s:%s", dup->server, dup->port);
+#ifdef TLS
 	}
+#endif /* TLS */
 	refresh();
 
 	if ((ret = net_connect(dup, e->tls != dup->tls)) == -1) {
@@ -1061,7 +1065,7 @@ sighandler(int signal) {
 
 void
 usage(char *argv0) {
-	fprintf(stderr, "usage: %s [-kPv] [-p plumber] [uri]\n", basename(argv0));
+	fprintf(stderr, "usage: %s [-kPvu] [-p plumber] [uri]\n", basename(argv0));
 	exit(EXIT_FAILURE);
 }
 
@@ -1109,6 +1113,13 @@ main(int argc, char *argv[]) {
 					break;
 				case 'P':
 					parallelplumb = 1;
+					break;
+				case 'u':
+#ifdef TLS
+					autotls = 1;
+#else
+					error("TLS support not compiled");
+#endif /* TLS */
 					break;
 				case 'v':
 					fprintf(stderr, "zygo %s\n", COMMIT);
