@@ -1068,14 +1068,10 @@ main(int argc, char *argv[]) {
 	Elem start[] = {
 		{0, '3', "No URI specified, or unable to locate URI."},
 		{0, 'i', ""},
-		{0, 'i', "Welcome to zygo"},
+		{0, 'i', "Welcome to zygo."},
+		{0, '1', " - git repo", "/git/o/zygo", "hhvn.uk", "70"},
 		{0, 'i', ""},
-		{0, '1', "Type '1' to follow this link to gopher://hhvn.uk/1/git/o/zygo.", "/git/o/zygo", "hhvn.uk", "70"},
-		{0, 'i', "Type ':' followed by a URI to go to said URI."},
-		{0, 'i', "Type 'h' to read the man page"},
-		{0, 'i', "Type 'q' to quit"},
-		{0, 'i', ""},
-		{0, 'i', "Only certain commands can be run if not veiwing a gopher menu."},
+		{0, 'i', "Type 'h' to read the man page."},
 		{0, 'i', NULL},
 	};
 
