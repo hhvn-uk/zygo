@@ -244,10 +244,10 @@ uritoelem(const char *uri) {
 		}
 	}
 
-	if (!ret->server) {
+	if (!ret->server && seg == SEGSERVER) {
 		ret->server = estrdup(tmp);
 		tmp += strlen(tmp);
-	} else if (!ret->port) {
+	} else if (!ret->port && seg == SEGPORT) {
 		ret->port = estrdup(tmp);
 		tmp += strlen(tmp);
 	}
