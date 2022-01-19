@@ -651,7 +651,8 @@ find(int backward) {
 
 int
 draw_line(Elem *e, int nwidth) {
-	int lc, cc;
+	int y, x, len;
+	wchar_t *mbdesc, *p;
 
 	attron(COLOR_PAIR(PAIR_EID));
 	if (e->type != 'i' && e->type != '3')
@@ -665,10 +666,28 @@ draw_line(Elem *e, int nwidth) {
 	printw("| ");
 	if (ui.search && regexec(&ui.regex, e->desc, 0, NULL, 0) == 0)
 		attron(A_REVERSE);
-	printw("%s", e->desc);
+
+	len = mbstowcs(NULL, e->desc, 0) + 1;
+	mbdesc = emalloc(len * sizeof(wchar_t*));
+	mbstowcs(mbdesc, e->desc, len);
+
+	getyx(stdscr, y, x);
+	for (p = mbdesc; *p; p++) {
+		addnwstr(p, 1);
+		x++;
+		if (x == COLS) {
+			printw("%1$ *2$s / ", "", nwidth + 6);
+			x = 9 + nwidth;
+			y++;
+		}
+		if (y == LINES - 1)
+			break;
+	}
+
+	free(mbdesc);
 	attroff(A_REVERSE);
 	printw("\n");
-	return 1;
+	return y + 1;
 }
 
 void
@@ -685,8 +704,8 @@ draw_page(void) {
 		nwidth = digits(page->lastid);
 		move(0, 0);
 		zygo_assert(ui.scroll <= list_len(&page));
-		for (i = ui.scroll; i <= list_len(&page) - 1 && y < LINES - 1; i++)
-			y += draw_line(list_get(&page, i), nwidth);
+		for (i = ui.scroll; i <= list_len(&page) - 1 && y != LINES - 1; i++)
+			y = draw_line(list_get(&page, i), nwidth);
 		for (; y < LINES - 1; y++) {
 			move(y, 0);
 			clrtoeol();
