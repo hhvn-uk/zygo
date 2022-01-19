@@ -22,7 +22,8 @@
 .Nd ncurses gopher client
 .Sh SYNOPSIS
 .Nm
-.Op Fl kv
+.Op Fl vkPu
+.Op Fl p Ar plumber
 .Op Ar uri
 .Sh DESCRIPTION
 .Nm
@@ -79,7 +80,7 @@ Set the plumber to
 Do not wait for the plumber to exit.
 .It Fl u
 Automatically upgrade connections to TLS.
-.It Fl
+.El
 .Sh INPUT
 .Nm
 is constantly reading input.
