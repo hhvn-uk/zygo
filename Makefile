@@ -37,7 +37,7 @@ zygo.o: config.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 install:
-	cp -f $(BIN) $(BINDIR)/$(BIN)
+	install -m0755 $(BIN) $(BINDIR)/$(BIN)
 	sed "s/COMMIT/$(COMMIT)/" < $(MAN) > $(MANDIR)/man1/$(MAN)
 
 uninstall:
