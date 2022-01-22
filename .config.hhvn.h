@@ -1,4 +1,5 @@
 static char *plumber = "plumb";
+static char *yanker = "xclip";
 static int parallelplumb = 1;
 static int stimeout = 5;
 static int regexflags = REG_ICASE|REG_EXTENDED;

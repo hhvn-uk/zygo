@@ -829,6 +829,35 @@ end:
 	return ui.arg;
 }
 
+Elem *
+strtolink(char *str) {
+	if (atoi(str) >= page->lastid || atoi(str) < 0) {
+		error("no such link: %s", str);
+		return NULL;
+	}
+
+	return list_idget(&page, atoi(str));
+}
+
+void
+yank(Elem *e) {
+	FILE *hand;
+	char *uri;
+
+	uri = elemtouri(e);
+
+	/* TODO: fork and close stdout/stderr,
+	 *       whilst checking for error */
+	if (!(hand = popen(yanker, "w"))) {
+		error("could not run %s for yanking", yanker);
+		return;
+	}
+	fwrite(uri, strlen(uri), sizeof(char), hand);
+	pclose(hand);
+
+	free(uri);
+}
+
 /*
  * Main loop
  */
@@ -872,9 +901,7 @@ run(void) {
 					elem_free(e);
 					break;
 				case '+':
-					if (atoi(ui.arg) >= page->lastid || atoi(ui.arg) < 0) {
-						error("no suck link: %s", ui.arg);
-					} else {
+					if (e = strtolink(ui.arg)) {
 						move(LINES - 1, 0);
 						attroff(A_COLOR);
 						clrtoeol();
@@ -907,6 +934,10 @@ run(void) {
 					strcat(e->selector, ui.arg);
 					go(e, 1, 0);
 					elem_free(e);
+					break;
+				case 'y':
+					if (e = strtolink(ui.arg))
+						yank(e);
 					break;
 				}
 				ui.wantinput = 0;
@@ -1024,6 +1055,10 @@ run(void) {
 			case 'h':
 				manpage();
 				break;
+			case 'Y':
+				checkcurrent();
+				yank(current);
+				break;
 			/* link numbers */
 			case '0': case '1': case '2': case '3': case '4':
 			case '5': case '6': case '7': case '8': case '9':
@@ -1041,8 +1076,10 @@ run(void) {
 			case '+':
 			case '/':
 			case 'a':
-				if (c == 'a' || c == '+')
+			case 'y':
+				if (c == 'a' || c == '+' || c == 'y') {
 					checkcurrent();
+				}
 				ui.cmd = (char)c;
 				ui.wantinput = 1;
 				ui.input[0] = '\0';
@@ -1086,7 +1123,7 @@ sighandler(int signal) {
 
 void
 usage(char *argv0) {
-	fprintf(stderr, "usage: %s [-kPvu] [-p plumber] [uri]\n", basename(argv0));
+	fprintf(stderr, "usage: %s [-kPvu] [-p plumber] [-y yanker] [uri]\n", basename(argv0));
 	exit(EXIT_FAILURE);
 }
 
@@ -1128,6 +1165,16 @@ main(int argc, char *argv[]) {
 						s += strlen(s) - 1;
 					} else if (i + 1 != argc) {
 						plumber = argv[++i];
+					} else {
+						usage(argv[0]);
+					}
+					break;
+				case 'y':
+					if (*(s+1)) {
+						yanker = s + 1;
+						s += strlen(s) - 1;
+					} else if (i + 1 != argc) {
+						yanker = argv[++i];
 					} else {
 						usage(argv[0]);
 					}

@@ -102,6 +102,7 @@ void draw_page(void);
 void draw_bar(void);
 void syncinput(void);
 char *prompt(char *prompt, size_t count);
+Elem *strtolink(char *str);
 
 /* Main loop */
 void run(void);
