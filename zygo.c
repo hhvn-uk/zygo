@@ -436,7 +436,7 @@ int
 go(Elem *e, int mhist, int notls) {
 	char line[BUFLEN];
 	char *sh, *arg, *uri;
-	char *search;
+	char *pstr;
 	Elem *elem;
 	Elem *dup = elem_dup(e); /* elem may be part of page */
 	Elem missing = {0, '3', "Full contents not received."};
@@ -477,15 +477,15 @@ go(Elem *e, int mhist, int notls) {
 	}
 
 	if (dup->type == '7' && !strchr(dup->selector, '\t')) {
-		if ((search = prompt("Query")) == NULL) {
+		if ((pstr = prompt("Query: ", 0)) == NULL) {
 			elem_free(dup);
 			return -1;
 		}
 
 		free(dup->selector);
-		dup->selector = emalloc(strlen(e->selector) + strlen(search) + 2);
-		snprintf(dup->selector, strlen(e->selector) + strlen(search) + 2,
-				"%s\t%s", e->selector, search);
+		dup->selector = emalloc(strlen(e->selector) + strlen(pstr) + 2);
+		snprintf(dup->selector, strlen(e->selector) + strlen(pstr) + 2,
+				"%s\t%s", e->selector, pstr);
 	}
 
 	move(LINES - 1, 0);
@@ -505,14 +505,11 @@ go(Elem *e, int mhist, int notls) {
 
 	if ((ret = net_connect(dup, e->tls != dup->tls)) == -1) {
 		if (dup->tls && dup->tls == e->tls) {
-			attron(A_BOLD | COLOR_PAIR(PAIR_CMD));
-			printw("  Try again in cleartext? ");
-			curs_set(1);
-			attroff(A_BOLD);
-			refresh();
 			timeout(stimeout * 1000);
-			if (tolower(getch()) == 'y') {
+			pstr = prompt("TLS failed. Retry in cleartext (y/n)? ", 1);
+			if (pstr && tolower(*pstr) == 'y') {
 				dup->tls = 0;
+				ui.error = 0; /* hide the TLS error */
 				ret = go(dup, mhist, 1);
 			}
 			timeout(-1);
@@ -786,12 +783,13 @@ syncinput(void) {
 }
 
 char *
-prompt(char *prompt) {
+prompt(char *prompt, size_t count) {
 	wint_t c;
 	int ret;
 	size_t il;
 	int y, x;
 
+	attrset(A_NORMAL);
 	ui.input[il = 0] = '\0';
 	curs_set(1);
 	goto start;
@@ -802,12 +800,11 @@ start:
 			move(LINES - 1, 0);
 			clrtoeol();
 			syncinput();
-			printw("%s: %s", prompt, ui.arg);
+			printw("%s%s", prompt, ui.arg);
 		} else if (c == 27 /* escape */) {
 			return NULL;
 		} else if (c == '\n') {
-			syncinput();
-			return ui.arg;
+			goto end;
 		} else if (c == KEY_BACKSPACE || c == 127) {
 			if (il != 0) {
 				getyx(stdscr, y, x);
@@ -822,8 +819,13 @@ start:
 			ui.input[il++] = c;
 			ui.input[il] = '\0';
 		}
+
+		if (count && il == count)
+			goto end;
 	}
 
+end:
+	syncinput();
 	return ui.arg;
 }
 

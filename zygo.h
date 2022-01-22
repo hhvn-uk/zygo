@@ -101,7 +101,7 @@ int draw_line(Elem *e, int nwidth);
 void draw_page(void);
 void draw_bar(void);
 void syncinput(void);
-char *prompt(char *prompt);
+char *prompt(char *prompt, size_t count);
 
 /* Main loop */
 void run(void);
