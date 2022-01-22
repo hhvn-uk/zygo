@@ -982,7 +982,7 @@ run(void) {
 			switch (c) {
 			case KEY_DOWN:
 			case 'j':
-				if (list_len(&page) - ui.scroll > LINES)
+				if (list_len(&page) - ui.scroll > LINES - 1)
 					ui.scroll++;
 				draw_page();
 				break;
@@ -991,7 +991,7 @@ run(void) {
 				if (list_len(&page) - ui.scroll > ((int)LINES * 1.5))
 					ui.scroll += ((int)LINES / 2);
 				else if (list_len(&page) > LINES)
-					ui.scroll = list_len(&page) - LINES;
+					ui.scroll = list_len(&page) - LINES + 1;
 				draw_page();
 				break;
 			case KEY_UP:
@@ -1033,8 +1033,8 @@ run(void) {
 				draw_page();
 				break;
 			case 'G':
-				if (list_len(&page) > LINES)
-					ui.scroll = list_len(&page) - LINES;
+				if (list_len(&page) > LINES - 1)
+					ui.scroll = list_len(&page) - LINES + 1;
 				draw_page();
 				break;
 			case 'n':
