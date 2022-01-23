@@ -661,16 +661,22 @@ draw_line(Elem *e, int nwidth) {
 	int y, x, len;
 	wchar_t *mbdesc, *p;
 
-	attron(COLOR_PAIR(PAIR_EID));
+	if (nwidth)
+		attron(COLOR_PAIR(PAIR_EID));
+
 	if (e->type != 'i' && e->type != '3')
 		printw("%1$ *2$d ", e->id, nwidth + 1);
-	else
+	else if (nwidth)
 		printw("%1$ *2$s ", "", nwidth + 1);
-	attroff(A_COLOR);
-	attron(COLOR_PAIR(getscheme(e)->pair));
-	printw("%s ", getscheme(e)->name);
-	attroff(A_COLOR);
-	printw("| ");
+
+	if (nwidth) {
+		attroff(A_COLOR);
+		attron(COLOR_PAIR(getscheme(e)->pair));
+		printw("%s ", getscheme(e)->name);
+		attroff(A_COLOR);
+		printw("| ");
+	}
+
 	if (ui.search && regexec(&ui.regex, e->desc, 0, NULL, 0) == 0)
 		attron(A_REVERSE);
 
@@ -683,8 +689,10 @@ draw_line(Elem *e, int nwidth) {
 		addnwstr(p, 1);
 		x++;
 		if (x == COLS) {
-			printw("%1$ *2$s / ", "", nwidth + 6);
-			x = 9 + nwidth;
+			if (nwidth) {
+				printw("%1$ *2$s / ", "", nwidth + 6);
+				x = 9 + nwidth;
+			}
 			y++;
 		}
 		if (y == LINES - 1)
@@ -708,7 +716,10 @@ draw_page(void) {
 	attroff(A_COLOR);
 
 	if (page) {
-		nwidth = digits(page->lastid);
+		if (!current || current->type != '0')
+			nwidth = digits(page->lastid);
+		else
+			nwidth = 0;
 		move(0, 0);
 		zygo_assert(ui.scroll <= list_len(&page));
 		for (i = ui.scroll; i <= list_len(&page) - 1 && y != LINES - 1; i++)
