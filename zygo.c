@@ -29,6 +29,7 @@
 #include <regex.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <wchar.h>
 #include <sys/wait.h>
 #include "zygo.h"
 #include "config.h"

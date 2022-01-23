@@ -22,7 +22,7 @@ MAN	= zygo.1
 SRC	+= zygo.c
 OBJ	= $(SRC:.c=.o)
 COMMIT	= $(shell git log HEAD...HEAD~1 --pretty=format:%h)
-LDFLAGS = -lncurses
+LDFLAGS = -lncursesw
 CFLAGS	= -DCOMMIT=\"$(COMMIT)\"
 
 include config.mk
