@@ -447,7 +447,7 @@ go(Elem *e, int mhist, int notls) {
 
 	if (!e) return -1;
 
-	if (dup->type != '1' && dup->type != '7' && dup->type != '+') {
+	if (dup->type != '0' && dup->type != '1' && dup->type != '7' && dup->type != '+') {
 		/* call mario */
 		uri = elemtouri(e);
 		arg = emalloc(strlen(plumber) + strlen(uri) + 2);
@@ -531,13 +531,22 @@ go(Elem *e, int mhist, int notls) {
 		if (strcmp(line, ".") == 0) {
 			gotall = 1;
 		} else {
-			elem = gophertoelem(dup, line);
+			if (dup->type == '0') {
+				elem = emalloc(sizeof(Elem));
+				elem->type = 'i';
+				elem->desc = estrdup(line);
+				elem->selector = NULL;
+				elem->server = NULL;
+				elem->port = NULL;
+			} else {
+				elem = gophertoelem(dup, line);
+			}
 			list_append(&page, elem);
 			elem_free(elem);
 		}
 	}
 
-	if (!gotall)
+	if (!gotall && dup->type != '0')
 		list_append(&page, &missing);
 
 	if (current && mhist)
