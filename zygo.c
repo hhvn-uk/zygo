@@ -862,19 +862,35 @@ strtolink(char *str) {
 
 void
 yank(Elem *e) {
-	FILE *hand;
-	char *uri;
+	char *uri, *sh;
+	int pfd[2];
+	int status;
+	pid_t pid;
 
 	uri = elemtouri(e);
 
-	/* TODO: fork and close stdout/stderr,
-	 *       whilst checking for error */
-	if (!(hand = popen(yanker, "w"))) {
-		error("could not run %s for yanking", yanker);
-		return;
+	zygo_assert(pipe(pfd) != -1);
+	zygo_assert((pid = fork()) != -1);
+
+	sh = getenv("SHELL");
+	sh = sh ? sh : "/bin/sh";
+
+	if (pid == 0) {
+		close(0);
+		close(1);
+		close(2);
+		close(pfd[1]);
+		dup2(pfd[0], 0);
+		execl(sh, sh, "-c", yanker, NULL);
 	}
-	fwrite(uri, strlen(uri), sizeof(char), hand);
-	pclose(hand);
+
+	close(pfd[0]);
+	write(pfd[1], uri, strlen(uri));
+	close(pfd[1]);
+
+	waitpid(pid, &status, 0);
+	if (WEXITSTATUS(status) != 0)
+		error("could not execute '%s' for yanking", yanker);
 
 	free(uri);
 }
