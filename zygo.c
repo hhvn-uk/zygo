@@ -852,7 +852,7 @@ end:
 
 Elem *
 strtolink(char *str) {
-	if (atoi(str) >= page->lastid || atoi(str) < 0) {
+	if (atoi(str) > page->lastid || atoi(str) < 0) {
 		error("no such link: %s", str);
 		return NULL;
 	}
