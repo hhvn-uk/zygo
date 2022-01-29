@@ -995,6 +995,13 @@ run(void) {
 		} else if (ui.wantinput == 2) {
 			if (c == 27 /* escape */) {
 				ui.wantinput = 0;
+			} else if (c == KEY_BACKSPACE || c == 127) {
+				if (il <= 1) {
+					ui.wantinput = 0;
+				} else {
+					ui.input[--il] = '\0';
+					syncinput();
+				}
 			} else if (c == '\n' || il + 1 >= digits(page->lastid)) {
 				if (c != '\n') {
 					ui.input[il++] = c;
@@ -1002,13 +1009,6 @@ run(void) {
 					syncinput();
 				}
 				goto gonum;
-			} else if (c == KEY_BACKSPACE || c == 127) {
-				if (il == 0) {
-					ui.wantinput = 0;
-				} else {
-					ui.input[--il] = '\0';
-					syncinput();
-				}
 			} else if (isdigit((int)c)) {
 				ui.input[il++] = c;
 				ui.input[il] = '\0';
