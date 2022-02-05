@@ -26,6 +26,7 @@
 #include <locale.h>
 #include <signal.h>
 #include <unistd.h>
+#include <limits.h>
 #include <regex.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -895,6 +896,20 @@ yank(Elem *e) {
 	free(uri);
 }
 
+void
+pagescroll(int lines) {
+	if (lines > 0) {
+		ui.scroll += lines;
+		if (ui.scroll > list_len(&page) - LINES)
+			ui.scroll = list_len(&page) - LINES + 1;
+	} else if (lines < 0) {
+		ui.scroll -= lines;
+		if (ui.scroll < 0)
+			ui.scroll = 0;
+	} /* else intentionally left blank */
+	draw_page();
+}
+
 /*
  * Main loop
  */
@@ -1019,30 +1034,19 @@ run(void) {
 			switch (c) {
 			case KEY_DOWN:
 			case 'j':
-				if (list_len(&page) - ui.scroll > LINES - 1)
-					ui.scroll++;
-				draw_page();
+				pagescroll(1);
 				break;
 			case 4: /* ^D */
 			case 6: /* ^F */
-				if (list_len(&page) - ui.scroll > ((int)LINES * 1.5))
-					ui.scroll += ((int)LINES / 2);
-				else if (list_len(&page) > LINES)
-					ui.scroll = list_len(&page) - LINES + 1;
-				draw_page();
+				pagescroll((int)(LINES / 2));
 				break;
 			case KEY_UP:
 			case 'k':
-				if (ui.scroll > 0)
-					ui.scroll--;
-				draw_page();
+				pagescroll(-1);
 				break;
 			case 21: /* ^U */
 			case 2:  /* ^B */
-				ui.scroll -= ((int)LINES / 2);
-				if (ui.scroll < 0)
-					ui.scroll = 0;
-				draw_page();
+				pagescroll(-(int)(LINES / 2));
 				break;
 			case 3: /* ^C */
 			case 'q':
@@ -1066,13 +1070,10 @@ run(void) {
 				draw_bar();
 				break;
 			case 'g':
-				ui.scroll = 0;
-				draw_page();
+				pagescroll(INT_MIN);
 				break;
 			case 'G':
-				if (list_len(&page) > LINES - 1)
-					ui.scroll = list_len(&page) - LINES + 1;
-				draw_page();
+				pagescroll(INT_MAX);
 				break;
 			case 'n':
 			case 'N':

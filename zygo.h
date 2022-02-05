@@ -103,6 +103,7 @@ void draw_bar(void);
 void syncinput(void);
 char *prompt(char *prompt, size_t count);
 Elem *strtolink(char *str);
+void pagescroll(int lines);
 
 /* Main loop */
 void run(void);
