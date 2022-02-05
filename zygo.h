@@ -104,6 +104,7 @@ void syncinput(void);
 char *prompt(char *prompt, size_t count);
 Elem *strtolink(char *str);
 void pagescroll(int lines);
+void idgo(size_t id);
 
 /* Main loop */
 void run(void);

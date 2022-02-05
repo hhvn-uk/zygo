@@ -753,7 +753,7 @@ draw_bar(void) {
 		printw("%s", ui.errorbuf);
 	} else if (ui.wantinput) {
 		curs_set(1);
-		if (ui.wantinput == 1) {
+		if (ui.cmd) {
 			attron(COLOR_PAIR(PAIR_CMD));
 			printw("%c", ui.cmd);
 		}
@@ -910,6 +910,14 @@ pagescroll(int lines) {
 	draw_page();
 }
 
+void
+idgo(size_t id) {
+	if (id > page->lastid || id < 1)
+		error("no such link: %d", id);
+	else
+		go(list_idget(&page, id), 1, 0);
+}
+
 /*
  * Main loop
  */
@@ -942,7 +950,7 @@ run(void) {
 		if (c == KEY_RESIZE) {
 			draw_page();
 			draw_bar();
-		} else if (ui.wantinput == 1) {
+		} else if (ui.wantinput) {
 			if (c == 27 /* escape */) {
 				ui.wantinput = 0;
 			} else if (c == '\n') {
@@ -991,11 +999,13 @@ run(void) {
 					if (e = strtolink(ui.arg))
 						yank(e);
 					break;
+				case '\0': /* links */
+					idgo(atoi(ui.arg));
 				}
 				ui.wantinput = 0;
 				draw_page();
 			} else if (c == KEY_BACKSPACE || c == 127) {
-				if (il == 0) {
+				if ((ui.cmd && il == 0) || (!ui.cmd && il == 1)) {
 					ui.wantinput = 0;
 				} else {
 					ui.input[--il] = '\0';
@@ -1005,29 +1015,11 @@ run(void) {
 				ui.input[il++] = c;
 				ui.input[il] = '\0';
 				syncinput();
-			}
-			draw_bar();
-		} else if (ui.wantinput == 2) {
-			if (c == 27 /* escape */) {
-				ui.wantinput = 0;
-			} else if (c == KEY_BACKSPACE || c == 127) {
-				if (il <= 1) {
+				if (!ui.cmd && il + 1 >= digits(page->lastid)) {
+					idgo(atoi(ui.arg));
 					ui.wantinput = 0;
-				} else {
-					ui.input[--il] = '\0';
-					syncinput();
+					draw_page();
 				}
-			} else if (c == '\n' || il + 1 >= digits(page->lastid)) {
-				if (c != '\n') {
-					ui.input[il++] = c;
-					ui.input[il] = '\0';
-					syncinput();
-				}
-				goto gonum;
-			} else if (isdigit((int)c)) {
-				ui.input[il++] = c;
-				ui.input[il] = '\0';
-				syncinput();
 			}
 			draw_bar();
 		} else {
@@ -1100,13 +1092,17 @@ run(void) {
 			/* link numbers */
 			case '0': case '1': case '2': case '3': case '4':
 			case '5': case '6': case '7': case '8': case '9':
-				ui.wantinput = 2;
+				ui.wantinput = 1;
+				ui.cmd = '\0';
 				ui.input[0] = c;
 				ui.input[1] = '\0';
 				syncinput();
 				il = 1;
-				if (digits(page->lastid) == 1)
-					goto gonum;
+				if (digits(page->lastid) == 1) {
+					idgo(atoi(ui.arg));
+					ui.wantinput = 0;
+					draw_page();
+				}
 				draw_bar();
 				break;
 			/* commands with arg */
@@ -1134,19 +1130,7 @@ run(void) {
 				break;
 			}
 		}
-
-		continue;
-
-gonum:
-		if (atoi(ui.arg) > page->lastid || atoi(ui.arg) < 1)
-			error("no such link: %d", atoi(ui.arg));
-		else
-			go(list_idget(&page, atoi(ui.arg)), 1, 0);
-		ui.wantinput = 0;
-		draw_page();
-		draw_bar();
 	}
-
 #undef checkcurrent
 }
 
