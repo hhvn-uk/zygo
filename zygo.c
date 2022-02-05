@@ -898,12 +898,12 @@ yank(Elem *e) {
 
 void
 pagescroll(int lines) {
-	if (lines > 0) {
+	if (lines > 0 && list_len(&page) > LINES - 1) {
 		ui.scroll += lines;
 		if (ui.scroll > list_len(&page) - LINES)
 			ui.scroll = list_len(&page) - LINES + 1;
 	} else if (lines < 0) {
-		ui.scroll -= lines;
+		ui.scroll += lines;
 		if (ui.scroll < 0)
 			ui.scroll = 0;
 	} /* else intentionally left blank */
