@@ -1015,7 +1015,7 @@ run(void) {
 				ui.input[il++] = c;
 				ui.input[il] = '\0';
 				syncinput();
-				if (!ui.cmd && il + 1 >= digits(page->lastid)) {
+				if (!ui.cmd && atoi(ui.arg) * 10 > page->lastid) {
 					idgo(atoi(ui.arg));
 					ui.wantinput = 0;
 					draw_page();
@@ -1098,7 +1098,7 @@ run(void) {
 				ui.input[1] = '\0';
 				syncinput();
 				il = 1;
-				if (digits(page->lastid) == 1) {
+				if (atoi(ui.arg) * 10 > page->lastid) {
 					idgo(atoi(ui.arg));
 					ui.wantinput = 0;
 					draw_page();
