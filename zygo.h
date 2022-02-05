@@ -112,6 +112,7 @@ void run(void);
 /* Misc */
 int readline(char *buf, size_t count);
 int go(Elem *e, int mhist, int notls);
+int digits(int i);
 void sighandler(int signal);
 #ifdef ZYGO_STRLCAT
 #undef strlcat
