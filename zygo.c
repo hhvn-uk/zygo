@@ -1152,20 +1152,16 @@ usage(char *argv0) {
 int
 main(int argc, char *argv[]) {
 	Elem *target = NULL;
+	Elem err = {0, 0, NULL, NULL, NULL, NULL, 0};
 	char *s;
 	int i;
 	Elem start[] = {
-		{0, '3', "No URI specified, or unable to locate URI."},
-		{0, 'i', ""},
 		{0, 'i', "Welcome to zygo."},
 		{0, '1', " - git repo", "/git/o/zygo", "hhvn.uk", "70"},
 		{0, 'i', ""},
 		{0, 'i', "Type 'h' to read the man page."},
 		{0, 'i', NULL},
 	};
-
-	for (i = 0; start[i].desc; i++)
-		list_append(&page, &start[i]);
 
 	for (i = 1; i < argc; i++) {
 		if ((*argv[i] == '-' && *(argv[i]+1) == '\0') ||
@@ -1222,6 +1218,20 @@ main(int argc, char *argv[]) {
 			target = uritoelem(argv[argc-1]);
 			go(target, 1, 0);
 		}
+	}
+
+	if (!page) {
+		if (ui.error) {
+			err.type = '3';
+			err.desc = ui.errorbuf;
+			list_append(&page, &err);
+			err.type = 'i';
+			err.desc = "";
+			list_append(&page, &err);
+		}
+
+		for (i = 0; start[i].desc; i++)
+			list_append(&page, &start[i]);
 	}
 
 	setlocale(LC_ALL, "");
