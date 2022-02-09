@@ -4,6 +4,7 @@ static int parallelplumb = 1;
 static int stimeout = 5;
 static int regexflags = REG_ICASE|REG_EXTENDED;
 static int autotls = 1;
+static int mdhilight = 1;
 
 static short bar_pair[2] = {-1,  0};
 static short uri_pair[2] = {0,   7};
@@ -33,8 +34,16 @@ static Scheme scheme[] = {
 	{'d',    "Doc ", 15 },
 	{'3',    "ERR ",  8 },
 
-	/* DNE! These values are actually used:
-	 * -1 = default foregrounds
-	 *  0 = default colour pair */
-	{'\0',   "????",  8 },
+	/* Experimental markdown header hilighting.
+	 * mdhilight must be set for this to show.
+	 * Unlike other elements of scheme, the fore-
+	 * ground is used for the text itself, not
+	 * the name. */
+	{MDH1,	 "    ",  7 },
+	{MDH2,   "    ",  6 },
+	{MDH3,   "    ",  5 },
+	{MDH4,   "    ",  4 },
+
+	/* must be last, see getscheme() */
+	{DEFL,   "????",  8 },
 };

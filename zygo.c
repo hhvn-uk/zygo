@@ -601,8 +601,21 @@ getscheme(Elem *e) {
 	if (type == 'h' && strstr(e->selector, "URL:"))
 		type = EXTR;
 
+	/* Try to get scheme from markdown header */
+	if (type == 'i' && mdhilight) {
+		/* 4+ matches MDH4 */
+		if (strncmp(e->desc, "####", 4) == 0)
+			type = MDH4;
+		else if (strncmp(e->desc, "###", 3) == 0)
+			type = MDH3;
+		else if (strncmp(e->desc, "##", 2) == 0)
+			type = MDH2;
+		else if (strncmp(e->desc, "#", 1) == 0)
+			type = MDH1;
+	}
+
 	for (i = 0; ; i++)
-		if (scheme[i].type == type || scheme[i].type == '\0')
+		if (scheme[i].type == type || scheme[i].type == DEFL)
 			return &scheme[i];
 }
 
@@ -680,6 +693,12 @@ draw_line(Elem *e, int nwidth) {
 
 	if (ui.search && regexec(&ui.regex, e->desc, 0, NULL, 0) == 0)
 		attron(A_REVERSE);
+
+	if (mdhilight && strncmp(e->desc, "#", 1) == 0) {
+		attron(A_BOLD);
+		attron(COLOR_PAIR(getscheme(e)->pair));
+		attroff(A_BOLD);
+	}
 
 	len = mbstowcs(NULL, e->desc, 0) + 1;
 	mbdesc = emalloc(len * sizeof(wchar_t*));

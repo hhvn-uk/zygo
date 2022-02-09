@@ -3,8 +3,8 @@ static char *yanker = "xclip";
 static int parallelplumb = 0;
 static int stimeout = 5;
 static int regexflags = REG_ICASE|REG_EXTENDED;
-static int autotls = 0; /* automatically try to 
-			   establish TLS connections? */
+static int mdhilight = 0; /* attempt to hilight markdown headers */
+static int autotls = 0;   /* automatically try to establish TLS connections */
 
 static short bar_pair[2] = {-1,  0};
 static short uri_pair[2] = {0,   7};
@@ -34,8 +34,16 @@ static Scheme scheme[] = {
 	{'d',    "Doc ",  8 },
 	{'3',    "ERR ",  1 },
 
-	/* DNE! These values are actually used:
-	 * -1 = default foregrounds
-	 *  0 = default colour pair */
-	{'\0',   "????",  1 },
+	/* Experimental markdown header hilighting.
+	 * mdhilight must be set for this to show.
+	 * Unlike other elements of scheme, the fore-
+	 * ground is used for the text itself, not
+	 * the name. */
+	{MDH1,	 "    ",  6 },
+	{MDH2,   "    ",  5 },
+	{MDH3,   "    ",  4 },
+	{MDH4,   "    ",  3 },
+
+	/* must be last, see getscheme() */
+	{DEFL,   "????",  8 },
 };

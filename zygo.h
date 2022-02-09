@@ -40,7 +40,8 @@ struct List {
 	size_t lastid;
 };
 
-enum { EXTR = 1 };
+enum { DEFL, EXTR,
+	MDH1, MDH2, MDH3, MDH4 };
 typedef struct Scheme Scheme;
 struct Scheme {
 	char type;
