@@ -293,7 +293,7 @@ gophertoelem(Elem *from, const char *line) {
 	 * the above loop, set it here for non-gopher+ */
 	if (!ret->port)
 		ret->port = estrdup(tmp);
-	if (from && from->tls &&
+	if (from && from->tls && ret->server && ret->port &&
 			strcmp(ret->server, from->server) == 0 &&
 			strcmp(ret->port, from->port) == 0)
 		ret->tls = 1;
