@@ -689,6 +689,8 @@ draw_line(Elem *e, int nwidth) {
 		printw("%s ", getscheme(e)->name);
 		attroff(A_COLOR);
 		printw("| ");
+	} else {
+		attroff(A_COLOR);
 	}
 
 	if (ui.search && regexec(&ui.regex, e->desc, 0, NULL, 0) == 0)
