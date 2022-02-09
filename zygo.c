@@ -378,9 +378,9 @@ Elem *
 list_idget(List **l, size_t id) {
 	int i;
 
-	if (!l || !(*l) || (*l)->len == 0 || id >= (*l)->len)
+	if (!l || !(*l) || (*l)->len == 0 || id > (*l)->len)
 		return NULL;
-	for (i = 0; i < (*l)->len; i++)
+	for (i = 0; i <= (*l)->len; i++)
 		if ((*((*l)->elems + i))->id == id)
 			return *((*l)->elems + i);
 	return NULL;
@@ -943,7 +943,7 @@ idgo(size_t id) {
 void
 run(void) {
 	wint_t c;
-	int ret;
+	int ret, i;
 	size_t il;
 	Elem *e;
 	char tmperror[BUFLEN];
@@ -1104,6 +1104,25 @@ run(void) {
 			case 'h':
 				manpage();
 				break;
+			case 'H':
+				if (history) {
+					list_append(&history, current);
+					elem_free(current);
+					current = NULL;
+					list_free(&page);
+					for (i = list_len(&history) - 2; i >= 0; i--) {
+						e = list_get(&history, i);
+						free(e->desc);
+						e->desc = elemtouri(e);
+						list_append(&page, e);
+					}
+					list_append(&page, e);
+					draw_bar();
+					draw_page();
+				} else {
+					error("no history");
+				}
+				break;
 			case 'Y':
 				checkcurrent();
 				yank(current);
@@ -1130,7 +1149,7 @@ run(void) {
 			case '/':
 			case 'a':
 			case 'y':
-				if (c == 'a' || c == '+' || c == 'y') {
+				if (c == 'a' || c == 'y') {
 					checkcurrent();
 				}
 				ui.cmd = (char)c;
