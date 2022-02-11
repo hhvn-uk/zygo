@@ -1,0 +1,22 @@
+zygo FAQ:
+Q: Why are there warning messages about undefined functions!?
+A: Ignore them, it's for your own good. If it compiles, it's probably fine.
+   (zygo uses the widechar functions from libncursesw. On some systems these are
+    defined in /usr/include/ncurses.h. On some systems they aren't. This isn't
+    an issue aslong as it can link with the widechar library.)
+
+Q: Okay, I ignored the warning messages, but it still didn't compile. Help?
+A: You need ncursesw (widechar ncurses).
+
+Q: AHHH HELP WHY IS IT OPENING A BROWSER? WHY DOES IT SAY WEIRD STUFF? WHY
+   IS [LITERALLY ANYTHING ELSE WEIRD] HAPPENING?
+A: It's probably xdg-open's fault. zygo is designed primarily as a browser of
+   gopher menus, but can also display text files for convenience. For any other
+   file, the plumber is invoked to decide what to do with the file, allowing for
+   greater customizability and unified behaviour between multiple programs using
+   the same concept. One recommendation I've seen is rifle(1) from the ranger(1)
+   file manager. (Writing your own plumber is simple, the uri of the file is
+   placed in argv[1] of the plumber).
+
+Q: Why is it called zygo?
+A: https://en.wikipedia.org/w/index.php?title=Zygogeomys&redirect=no
