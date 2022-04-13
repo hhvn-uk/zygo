@@ -35,8 +35,8 @@
 #include "zygo.h"
 #include "config.h"
 
-List *history = NULL;
-List *page = NULL;
+Elem *history = NULL;
+Elem *page = NULL;
 Elem *current = NULL;
 int insecure = 0;
 
@@ -113,22 +113,29 @@ elem_free(Elem *e) {
 }
 
 Elem *
+elem_create(int tls, char type, char *desc, char *selector, char *server, char *port) {
+	Elem *ret = emalloc(sizeof(Elem));
+	ret->tls = tls;
+#define DUP(str) str ? estrdup(str) : NULL
+	ret->type = type;
+	ret->desc = DUP(desc);
+	ret->selector = DUP(selector);
+	ret->server = DUP(server);
+	ret->port = DUP(port);
+	ret->id = ret->len = ret->lastid = 0;
+	ret->next = NULL;
+#undef DUP
+	return ret;
+}
+
+Elem *
 elem_dup(Elem *e) {
 	Elem *ret;
 
-	if (e) {
-#define DUP(str) str ? estrdup(str) : NULL
-		ret = emalloc(sizeof(Elem));
-		ret->tls = e->tls;
-		ret->type = e->type;
-		ret->desc = DUP(e->desc);
-		ret->selector = DUP(e->selector);
-		ret->server = DUP(e->server);
-		ret->port = DUP(e->port);
-#undef DUP
-	} else ret = NULL;
-
-	return ret;
+	if (e)
+		return elem_create(e->tls, e->type, e->desc, e->selector, e->server, e->port);
+	else
+		return NULL;
 }
 
 char *
@@ -186,10 +193,7 @@ uritoelem(const char *uri) {
 	enum {SEGSERVER, SEGPORT, SEGTYPE, SEGSELECTOR};
 	int seg;
 
-	ret = emalloc(sizeof(Elem));
-	ret->tls = 0;
-	ret->type = '1';
-	ret->desc = ret->selector = ret->server = ret->port = NULL;
+	ret = elem_create(0, '1', NULL, NULL, NULL, NULL);
 
 	if (strncmp(tmp, "gopher://", strlen("gopher://")) == 0) {
 		tmp += strlen("gopher://");
@@ -271,9 +275,7 @@ gophertoelem(Elem *from, const char *line) {
 	enum {SEGDESC, SEGSELECTOR, SEGSERVER, SEGPORT};
 	int seg;
 
-	ret = emalloc(sizeof(Elem));
-	ret->type = *(tmp++);
-	ret->desc = ret->selector = ret->server = ret->port = NULL;
+	ret = elem_create(0, *(tmp++), NULL, NULL, NULL, NULL);
 
 	for (p = tmp, seg = SEGDESC; *p; p++) {
 		if (*p == '\t') {
@@ -323,93 +325,87 @@ gophertoelem(Elem *from, const char *line) {
  * List functions
  */
 void
-list_free(List **l) {
+list_free(Elem **l) {
 	size_t i;
+	Elem *prev, *p;
 
-	zygo_assert(l);
-	if ((*l)) {
-		for (i = 0; i < (*l)->len; i++)
-			free(*((*l)->elems + i));
-		free((*l)->elems);
-		free((*l));
-		*l = NULL;
+	zygo_assert(l && *l);
+	for (prev = *l, p = prev->next; p; p = p->next) {
+		elem_free(prev);
+		prev = p;
 	}
+	*l = NULL;
 }
 
 void
-list_append(List **l, Elem *e) {
-	Elem *elem;
+list_append(Elem **l, Elem *e) {
+	Elem *elem, *p;
 
 	zygo_assert(l);
+	elem = elem_dup(e);
 
-	if (!(*l)) {
-		(*l) = emalloc(sizeof(List));
-		(*l)->len = 0;
-		(*l)->lastid = 0;
-		(*l)->elems = NULL;
+	if (!*l) {
+		(*l) = elem;
+		(*l)->len = 1;
+		(*l)->lastid = 0; /* incremented later */
+	} else {
+		for (p = *l; p && p->next; p = p->next);
+		p->next = elem;
+		(*l)->len++;
 	}
 
-	elem = elem_dup(e);
 	if (elem->type != 'i' && elem->type != '3')
 		elem->id = ++(*l)->lastid;
-	else
-		elem->id = 0;
-
-	if (!(*l)->elems) {
-		(*l)->len = 1;
-		(*l)->elems = emalloc(sizeof(Elem *) * (*l)->len);
-		*(*l)->elems = elem;
-		return;
-	}
-
-	(*l)->len++;
-	(*l)->elems = erealloc((*l)->elems, sizeof(Elem *) * (*l)->len);
-	*((*l)->elems + (*l)->len - 1) = elem;
 }
 
 Elem *
-list_get(List **l, size_t elem) {
+list_get(Elem **l, size_t elem) {
+	Elem *p;
 	if (!l || !(*l) || (*l)->len == 0 || elem >= (*l)->len)
 		return NULL;
-	return *((*l)->elems + elem);
+	for (p = *l; p && elem; elem--, p = p->next);
+	return p;
 }
 
 Elem *
-list_idget(List **l, size_t id) {
-	int i;
-
-	if (!l || !(*l) || (*l)->len == 0 || id > (*l)->len)
+list_idget(Elem **l, size_t id) {
+	Elem *p;
+	if (!l || !(*l) || (*l)->len == 0 || id > (*l)->lastid)
 		return NULL;
-	for (i = 0; i <= (*l)->len; i++)
-		if ((*((*l)->elems + i))->id == id)
-			return *((*l)->elems + i);
-	return NULL;
+	for (p = *l; p && id; p = p->next)
+		if (p->type != 'i' && p->type != '3')
+			if (!--id)
+				break;
+	return p;
 }
 
 size_t
-list_len(List **l) {
+list_len(Elem **l) {
 	if (!l || !(*l))
 		return 0;
 	return (*l)->len;
 }
 
 Elem *
-list_pop(List **l) {
-	Elem *ret;
+list_pop(Elem **l) {
+	Elem *ret, *p;
 	size_t i;
 
 	if (!l || !(*l))
 		return NULL;
 
 	if ((*l)->len == 1) {
-		ret = *(*l)->elems;
-		free((*l)->elems);
-		free((*l));
-		*l = NULL;
+		ret = (*l);
+		(*l) = NULL;
 	} else {
-		ret = *((*l)->elems + (*l)->len - 1);
-		(*l)->len--;
-		(*l)->elems = erealloc((*l)->elems, sizeof(Elem *) * (*l)->len);
+		ret = (*l);
+		(*l) = ret->next;
+		(*l)->len = ret->len - 1;
+		if (ret->type != 'i' && ret->type != '3') {
+			for (p = (*l); p; p = p->next)
+				if (p->id)
+					p->id--;
+		} else (*l)->lastid = ret->lastid;
 	}
 
 	return ret;
@@ -532,16 +528,10 @@ go(Elem *e, int mhist, int notls) {
 		if (strcmp(line, ".") == 0) {
 			gotall = 1;
 		} else {
-			if (dup->type == '0') {
-				elem = emalloc(sizeof(Elem));
-				elem->type = 'i';
-				elem->desc = estrdup(line);
-				elem->selector = NULL;
-				elem->server = NULL;
-				elem->port = NULL;
-			} else {
+			if (dup->type == '0')
+				elem = elem_create(0, 'i', estrdup(line), NULL, NULL, NULL);
+			else
 				elem = gophertoelem(dup, line);
-			}
 			list_append(&page, elem);
 			elem_free(elem);
 		}

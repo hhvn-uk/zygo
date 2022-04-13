@@ -31,13 +31,10 @@ struct Elem {
 	size_t id; /* only set when:
 		    * - type != 'i'
 		    * - in a list */
-};
-
-typedef struct List List;
-struct List {
-	struct Elem **elems;
+	/* Following sizes only set when first in list */
 	size_t len;
 	size_t lastid;
+	struct Elem *next;
 };
 
 enum { DEFL, EXTR,
@@ -60,8 +57,8 @@ enum {
 	PAIR_SCHEME = 7,
 };
 
-extern List *history;
-extern List *page;
+extern Elem *history;
+extern Elem *page;
 extern Elem *current;
 extern int insecure;
 
@@ -72,18 +69,19 @@ char *estrdup(const char *str);
 
 /* Elem functions */
 void elem_free(Elem *e);
+Elem *elem_create(int tls, char type, char *desc, char *selector, char *server, char *port);
 Elem *elem_dup(Elem *e);
 Elem *uritoelem(const char *uri);
 Elem *gophertoelem(Elem *from, const char *line);
 char *elemtouri(Elem *e);
 
 /* List functions */
-void list_free(List **l);
-void list_append(List **l, Elem *e);
-Elem *list_get(List **l, size_t elem);
-Elem *list_idget(List **l, size_t id);
-Elem *list_pop(List **l);
-size_t list_len(List **l);
+void list_free(Elem **l);
+void list_append(Elem **l, Elem *e);
+Elem *list_get(Elem **l, size_t elem);
+Elem *list_idget(Elem **l, size_t id);
+Elem *list_pop(Elem **l);
+size_t list_len(Elem **l);
 
 
 /* Network functions
