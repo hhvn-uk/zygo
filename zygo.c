@@ -329,7 +329,8 @@ list_free(Elem **l) {
 	size_t i;
 	Elem *prev, *p;
 
-	zygo_assert(l && *l);
+	if (!l || !*l)
+		return;
 	for (prev = *l, p = prev->next; p; p = p->next) {
 		elem_free(prev);
 		prev = p;
