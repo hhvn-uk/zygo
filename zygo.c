@@ -1140,6 +1140,7 @@ run(void) {
 			case ':':
 			case '+':
 			case '/':
+			case '?':
 			case 'a':
 			case 'y':
 				if (c == 'a' || c == 'y') {
