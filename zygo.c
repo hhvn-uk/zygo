@@ -819,7 +819,7 @@ prompt(char *prompt, size_t count) {
 	int y, x;
 
 	attrset(A_NORMAL);
-	ui.input[il = 0] = L'\0';
+	ui.input[il = 0] = '\0';
 	curs_set(1);
 	goto start;
 	while ((ret = get_wch(&c)) != ERR) {
@@ -846,7 +846,7 @@ start:
 		} else if (c >= 32 && c < KEY_CODE_YES) {
 			addnwstr((wchar_t *)&c, 1);
 			ui.input[il++] = c;
-			ui.input[il] = L'\0';
+			ui.input[il] = '\0';
 		}
 
 		if (count && il == count)
@@ -939,11 +939,11 @@ run(void) {
 	draw_page();
 	draw_bar();
 
-#define checkcurrent() \
+#define checkcurrent() do {\
 	if (!current || !current->server || !current->port) { \
 		error("%c command can only be used on remote gopher menus", c); \
 		break; \
-	}
+	}} while (0)
 
 	/* get_wch does refresh() for us */
 	while ((ret = get_wch(&c)) != ERR) {
@@ -984,7 +984,7 @@ run(void) {
 						ui.search = 0;
 					}
 
-					if (ui.input[0] != L'\0') {
+					if (ui.input[0] != '\0') {
 						if ((ret = regcomp(&ui.regex, ui.arg, regexflags)) != 0) {
 							regerror(ret, &ui.regex, (char *)&tmperror, sizeof(tmperror));
 							error("could not compile regex '%s': %s", ui.arg, tmperror);
@@ -1015,12 +1015,12 @@ run(void) {
 				if ((ui.cmd && il == 0) || (!ui.cmd && il == 1)) {
 					ui.wantinput = 0;
 				} else {
-					ui.input[--il] = L'\0';
+					ui.input[--il] = '\0';
 					syncinput();
 				}
 			} else if (c >= 32 && c < KEY_CODE_YES) {
 				ui.input[il++] = c;
-				ui.input[il] = L'\0';
+				ui.input[il] = '\0';
 				syncinput();
 				if (!ui.cmd && atoi(ui.arg) * 10 > page->lastid) {
 					idgo(atoi(ui.arg));
@@ -1121,7 +1121,7 @@ run(void) {
 				ui.wantinput = 1;
 				ui.cmd = '\0';
 				ui.input[0] = c;
-				ui.input[1] = L'\0';
+				ui.input[1] = '\0';
 				syncinput();
 				il = 1;
 				if (atoi(ui.arg) * 10 > page->lastid) {
@@ -1138,12 +1138,11 @@ run(void) {
 			case '?':
 			case 'a':
 			case 'y':
-				if (c == 'a' || c == 'y') {
+				if (c == 'a' || c == 'y')
 					checkcurrent();
-				}
 				ui.cmd = (char)c;
 				ui.wantinput = 1;
-				ui.input[0] = L'\0';
+				ui.input[0] = '\0';
 				ui.arg = estrdup("");
 				il = 0;
 				draw_bar();
