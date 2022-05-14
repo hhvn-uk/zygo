@@ -45,7 +45,7 @@ struct {
 	int wantinput; /* 0 - no
 			* 1 - yes (with cmd)
 			* 2 - yes (id) */
-	wint_t input[BUFLEN];
+	wchar_t input[BUFLEN];
 	char cmd;
 	char *arg;
 	int search;
@@ -130,12 +130,7 @@ elem_create(int tls, char type, char *desc, char *selector, char *server, char *
 
 Elem *
 elem_dup(Elem *e) {
-	Elem *ret;
-
-	if (e)
-		return elem_create(e->tls, e->type, e->desc, e->selector, e->server, e->port);
-	else
-		return NULL;
+	return (e ? elem_create(e->tls, e->type, e->desc, e->selector, e->server, e->port) : NULL);
 }
 
 char *
@@ -326,7 +321,6 @@ gophertoelem(Elem *from, const char *line) {
  */
 void
 list_free(Elem **l) {
-	size_t i;
 	Elem *prev, *p;
 
 	if (!l || !*l)
@@ -390,7 +384,6 @@ list_len(Elem **l) {
 Elem *
 list_pop(Elem **l) {
 	Elem *ret, *p;
-	size_t i;
 
 	if (!l || !(*l))
 		return NULL;
@@ -671,7 +664,7 @@ draw_line(Elem *e, int nwidth) {
 		attron(COLOR_PAIR(PAIR_EID));
 
 	if (e->type != 'i' && e->type != '3')
-		printw("%1$ *2$d ", e->id, nwidth + 1);
+		printw("%1$ *2$ld ", e->id, nwidth + 1);
 	else if (nwidth)
 		printw("%1$ *2$s ", "", nwidth + 1);
 
@@ -826,7 +819,7 @@ prompt(char *prompt, size_t count) {
 	int y, x;
 
 	attrset(A_NORMAL);
-	ui.input[il = 0] = '\0';
+	ui.input[il = 0] = L'\0';
 	curs_set(1);
 	goto start;
 	while ((ret = get_wch(&c)) != ERR) {
@@ -851,9 +844,9 @@ start:
 				ui.input[--il] = '\0';
 			}
 		} else if (c >= 32 && c < KEY_CODE_YES) {
-			addnwstr(&c, 1);
+			addnwstr((wchar_t *)&c, 1);
 			ui.input[il++] = c;
-			ui.input[il] = '\0';
+			ui.input[il] = L'\0';
 		}
 
 		if (count && il == count)
@@ -975,7 +968,7 @@ run(void) {
 					elem_free(e);
 					break;
 				case '+':
-					if (e = strtolink(ui.arg)) {
+					if ((e = strtolink(ui.arg))) {
 						move(LINES - 1, 0);
 						attroff(A_COLOR);
 						clrtoeol();
@@ -991,7 +984,7 @@ run(void) {
 						ui.search = 0;
 					}
 
-					if (ui.input[0] != '\0') {
+					if (ui.input[0] != L'\0') {
 						if ((ret = regcomp(&ui.regex, ui.arg, regexflags)) != 0) {
 							regerror(ret, &ui.regex, (char *)&tmperror, sizeof(tmperror));
 							error("could not compile regex '%s': %s", ui.arg, tmperror);
@@ -1010,7 +1003,7 @@ run(void) {
 					elem_free(e);
 					break;
 				case 'y':
-					if (e = strtolink(ui.arg))
+					if ((e = strtolink(ui.arg)))
 						yank(e);
 					break;
 				case '\0': /* links */
@@ -1022,12 +1015,12 @@ run(void) {
 				if ((ui.cmd && il == 0) || (!ui.cmd && il == 1)) {
 					ui.wantinput = 0;
 				} else {
-					ui.input[--il] = '\0';
+					ui.input[--il] = L'\0';
 					syncinput();
 				}
 			} else if (c >= 32 && c < KEY_CODE_YES) {
 				ui.input[il++] = c;
-				ui.input[il] = '\0';
+				ui.input[il] = L'\0';
 				syncinput();
 				if (!ui.cmd && atoi(ui.arg) * 10 > page->lastid) {
 					idgo(atoi(ui.arg));
@@ -1128,7 +1121,7 @@ run(void) {
 				ui.wantinput = 1;
 				ui.cmd = '\0';
 				ui.input[0] = c;
-				ui.input[1] = '\0';
+				ui.input[1] = L'\0';
 				syncinput();
 				il = 1;
 				if (atoi(ui.arg) * 10 > page->lastid) {
@@ -1150,7 +1143,7 @@ run(void) {
 				}
 				ui.cmd = (char)c;
 				ui.wantinput = 1;
-				ui.input[0] = '\0';
+				ui.input[0] = L'\0';
 				ui.arg = estrdup("");
 				il = 0;
 				draw_bar();
