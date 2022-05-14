@@ -40,6 +40,8 @@ Elem *page = NULL;
 Elem *current = NULL;
 int insecure = 0;
 
+#define TLSOPTS "ku"
+
 struct {
 	int scroll;
 	int wantinput; /* 0 - no
@@ -1171,8 +1173,14 @@ sighandler(int signal) {
 
 void
 usage(char *argv0) {
-	fprintf(stderr, "usage: %s [-kPvu] [-p plumber] [-y yanker] [uri]\n", basename(argv0));
+#ifdef TLS
+#define OPTS "-Pv" TLSOPTS
+#else
+#define OPTS "-Pv"
+#endif /* TLS */
+	fprintf(stderr, "usage: %s [%s] [-p plumber] [-y yanker] [uri]\n", basename(argv0), OPTS);
 	exit(EXIT_FAILURE);
+#undef OPTS
 }
 
 int
@@ -1195,13 +1203,15 @@ main(int argc, char *argv[]) {
 			usage(argv[0]);
 		} else if (*argv[i] == '-') {
 			for (s = argv[i]+1; *s; s++) {
+#ifndef TLS
+				if (strchr(TLSOPTS, *s)) {
+					fprintf(stderr, "-%c: TLS support not compiled\n", *s);
+					exit(EXIT_FAILURE);
+				}
+#endif /* TLS */
 				switch (*s) {
 				case 'k':
-#ifdef TLS
 					insecure = 1;
-#else
-					error("TLS support not compiled");
-#endif /* TLS */
 					break;
 				case 'p':
 					if (*(s+1)) {
@@ -1227,11 +1237,7 @@ main(int argc, char *argv[]) {
 					parallelplumb = 1;
 					break;
 				case 'u':
-#ifdef TLS
 					autotls = 1;
-#else
-					error("TLS support not compiled");
-#endif /* TLS */
 					break;
 				case 'v':
 					fprintf(stderr, "zygo %s\n", COMMIT);
