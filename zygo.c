@@ -623,14 +623,15 @@ find(int backward) {
 	};
 	size_t i;
 	size_t want;
+	Elem *e;
 
 	if (!ui.search) {
 		error("no search");
 		return;
 	}
 
-	for (i = 0; i < list_len(&page); i++) {
-		if (regexec(&ui.regex, list_get(&page, i)->desc, 0, NULL, 0) == 0) {
+	for (i = 0, e = page; i < list_len(&page); i++, e = e->next) {
+		if (regexec(&ui.regex, e->desc, 0, NULL, 0) == 0) {
 			matches[mlast].found = 1;
 			matches[mlast].pos = i;
 			if (!matches[mfirst].found) {
@@ -722,6 +723,7 @@ void
 draw_page(void) {
 	int y = 0, i;
 	int nwidth;
+	Elem *e;
 
 	if (!ui.candraw)
 		return;
@@ -735,8 +737,8 @@ draw_page(void) {
 			nwidth = 0;
 		move(0, 0);
 		zygo_assert(ui.scroll <= list_len(&page));
-		for (i = ui.scroll; i <= list_len(&page) - 1 && y != LINES - 1; i++)
-			y = draw_line(list_get(&page, i), nwidth);
+		for (i = ui.scroll, e = list_get(&page, i); i <= list_len(&page) - 1 && y != LINES - 1; i++, e = e->next)
+			y = draw_line(e, nwidth);
 		for (; y < LINES - 1; y++) {
 			move(y, 0);
 			clrtoeol();
