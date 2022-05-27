@@ -675,7 +675,7 @@ draw_line(Elem *e, int nwidth) {
 		attron(COLOR_PAIR(getscheme(e)->pair));
 		printw("%s ", getscheme(e)->name);
 		attroff(A_COLOR);
-		printw("| ");
+		printw("%s ", normsep);
 	} else {
 		attroff(A_COLOR);
 	}
@@ -699,7 +699,7 @@ draw_line(Elem *e, int nwidth) {
 		x++;
 		if (x == COLS) {
 			if (nwidth) {
-				printw("%1$ *2$s / ", "", nwidth + 6);
+				printw("%1$ *2$s %3$s ", "", nwidth + 6, wrapsep);
 				x = 9 + nwidth;
 			}
 			y++;

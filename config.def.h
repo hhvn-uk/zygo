@@ -1,5 +1,7 @@
 static char *plumber = "xdg-open";
 static char *yanker = "xclip";
+static char *normsep = "│"; /* separates link number/info and description */
+static char *wrapsep = "/"; /* same as above, but for wrapped lines */
 static int parallelplumb = 0;
 static int stimeout = 5;
 static int regexflags = REG_ICASE|REG_EXTENDED;
