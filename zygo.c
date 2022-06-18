@@ -1021,6 +1021,9 @@ run(void) {
 					ui.input[--il] = '\0';
 					syncinput();
 				}
+			} else if (ui.cmd == BIND_YANK && c == BIND_YANK && !il) {
+				ui.wantinput = 0;
+				yank(current);
 			} else if (c >= 32 && c < KEY_CODE_YES) {
 				ui.input[il++] = c;
 				ui.input[il] = '\0';
@@ -1113,10 +1116,6 @@ run(void) {
 				} else {
 					error("no history");
 				}
-				break;
-			case BIND_YANK_CURRENT:
-				checkcurrent();
-				yank(current);
 				break;
 			/* link numbers */
 			case '0': case '1': case '2': case '3': case '4':

@@ -33,7 +33,6 @@ enum Bindings {
 	BIND_ROOT = 'r',
 	BIND_HELP = 'z',
 	BIND_HISTORY = 'h',
-	BIND_YANK_CURRENT = 'Y',
 };
 
 static Scheme scheme[] = {
