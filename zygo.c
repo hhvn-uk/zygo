@@ -731,7 +731,8 @@ draw_page(void) {
 		else
 			nwidth = 0;
 		move(0, 0);
-		zygo_assert(ui.scroll <= list_len(&page));
+		if (ui.scroll > list_len(&page))
+			ui.scroll = 0;
 		for (i = ui.scroll, e = list_get(&page, i); i <= list_len(&page) - 1 && y != LINES - 1; i++, e = e->next)
 			y = draw_line(e, nwidth);
 		for (; y < LINES - 1; y++) {
@@ -964,12 +965,12 @@ run(void) {
 				ui.wantinput = 0;
 			} else if (c == '\n') {
 				switch (ui.cmd) {
-				case ':':
+				case BIND_URI:
 					e = uritoelem(ui.arg);
 					go(e, 1, 0);
 					elem_free(e);
 					break;
-				case '+':
+				case BIND_DISPLAY:
 					if ((e = strtolink(ui.arg))) {
 						move(LINES - 1, 0);
 						attroff(A_COLOR);
@@ -979,8 +980,8 @@ run(void) {
 						ui.candraw = 0;
 					}
 					break;
-				case '/':
-				case '?':
+				case BIND_SEARCH:
+				case BIND_SEARCH_BACK:
 					if (ui.search) {
 						regfree(&ui.regex);
 						ui.search = 0;
@@ -992,11 +993,11 @@ run(void) {
 							error("could not compile regex '%s': %s", ui.arg, tmperror);
 						} else {
 							ui.search = 1;
-							find(ui.cmd == '?' ? 1 : 0);
+							find(ui.cmd == BIND_SEARCH_BACK ? 1 : 0);
 						}
 					}
 					break;
-				case 'a':
+				case BIND_APPEND:
 					e = elem_dup(current);
 					e->selector = erealloc(e->selector, strlen(e->selector) + strlen(ui.arg) + 1);
 					/* should be safe.. I think */
@@ -1004,7 +1005,7 @@ run(void) {
 					go(e, 1, 0);
 					elem_free(e);
 					break;
-				case 'y':
+				case BIND_YANK:
 					if ((e = strtolink(ui.arg)))
 						yank(e);
 					break;
@@ -1034,7 +1035,7 @@ run(void) {
 		} else {
 			switch (c) {
 			case KEY_DOWN:
-			case 'j':
+			case BIND_DOWN:
 				pagescroll(1);
 				break;
 			case 4: /* ^D */
@@ -1050,10 +1051,10 @@ run(void) {
 				pagescroll(-(int)(LINES / 2));
 				break;
 			case 3: /* ^C */
-			case 'q':
+			case BIND_QUIT:
 				endwin();
 				exit(EXIT_SUCCESS);
-			case '<':
+			case BIND_BACK:
 				if (history) {
 					e = list_pop(&history);
 					go(e, 0, 0);
@@ -1064,24 +1065,24 @@ run(void) {
 					error("no history");
 				}
 				break;
-			case '*':
+			case BIND_RELOAD:
 				checkcurrent();
 				go(current, 0, 0);
 				draw_page();
 				draw_bar();
 				break;
-			case 'g':
+			case BIND_TOP:
 				pagescroll(INT_MIN);
 				break;
-			case 'G':
+			case BIND_BOTTOM:
 				pagescroll(INT_MAX);
 				break;
-			case 'n':
-			case 'N':
-				find(c == 'N' ? 1 : 0);
+			case BIND_SEARCH_NEXT:
+			case BIND_SEARCH_PREV:
+				find(c == BIND_SEARCH_PREV ? 1 : 0);
 				draw_page();
 				break;
-			case 'r':
+			case BIND_ROOT:
 				checkcurrent();
 				e = elem_dup(current);
 				free(e->selector);
@@ -1091,10 +1092,10 @@ run(void) {
 				draw_page();
 				draw_bar();
 				break;
-			case 'h':
+			case BIND_HELP:
 				manpage();
 				break;
-			case 'H':
+			case BIND_HISTORY:
 				if (history) {
 					list_append(&history, current);
 					elem_free(current);
@@ -1113,7 +1114,7 @@ run(void) {
 					error("no history");
 				}
 				break;
-			case 'Y':
+			case BIND_YANK_CURRENT:
 				checkcurrent();
 				yank(current);
 				break;
@@ -1134,13 +1135,13 @@ run(void) {
 				draw_bar();
 				break;
 			/* commands with arg */
-			case ':':
-			case '+':
-			case '/':
-			case '?':
-			case 'a':
-			case 'y':
-				if (c == 'a' || c == 'y')
+			case BIND_URI:
+			case BIND_DISPLAY:
+			case BIND_SEARCH:
+			case BIND_SEARCH_BACK:
+			case BIND_APPEND:
+			case BIND_YANK:
+				if (c == BIND_APPEND || c == BIND_YANK)
 					checkcurrent();
 				ui.cmd = (char)c;
 				ui.wantinput = 1;

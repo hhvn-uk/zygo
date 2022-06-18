@@ -15,6 +15,28 @@ static short arg_pair[2] = {-1,  0};
 static short err_pair[2] = {160, 0};
 static short eid_pair[2] = {4,   -1};
 
+/* Some bindings are still hardcoded in zygo.c */
+enum Bindings {
+	BIND_URI = ':',
+	BIND_DISPLAY = '+',
+	BIND_SEARCH = '/',
+	BIND_SEARCH_BACK = '?',
+	BIND_APPEND = 'a',
+	BIND_YANK = 'y',
+	BIND_DOWN = 'j',
+	BIND_QUIT = 'q',
+	BIND_BACK = '<',
+	BIND_RELOAD = '*',
+	BIND_TOP = 'g',
+	BIND_BOTTOM = 'G',
+	BIND_SEARCH_NEXT = 'n',
+	BIND_SEARCH_PREV = 'N',
+	BIND_ROOT = 'r',
+	BIND_HELP = 'h',
+	BIND_HISTORY = 'H',
+	BIND_YANK_CURRENT = 'Y',
+};
+
 static Scheme scheme[] = {
 	/* type, name,   fg */
 	{'i',    "    ", -1 },
