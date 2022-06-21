@@ -186,8 +186,9 @@ uritoelem(const char *uri) {
 	Elem *ret;
 	char *dup = estrdup(uri);
 	char *tmp = dup;
+	char *serv = NULL;
 	char *p;
-	enum {SEGSERVER, SEGPORT, SEGTYPE, SEGSELECTOR};
+	enum {SEGSERVER, SEGTYPE, SEGSELECTOR};
 	int seg;
 
 	ret = elem_create(0, '1', NULL, NULL, NULL, NULL);
@@ -214,30 +215,14 @@ uritoelem(const char *uri) {
 	for (p = tmp, seg = SEGSERVER; *p; p++) {
 		if (seg == SEGSELECTOR || *p == '\t') {
 			ret->selector = estrdup(p);
-			switch (seg) {
-			case SEGSERVER:
+			if (seg = SEGSERVER) {
 				*p = '\0';
-				ret->server = estrdup(tmp);
-				break;
-			case SEGPORT:
-				*p = '\0';
-				ret->port = estrdup(tmp);
-				break;
+				serv = tmp;
 			}
 			break;
-		} else if (seg == SEGSERVER && *p == ':') {
-			*p = '\0';
-			ret->server = estrdup(tmp);
-			tmp = p + 1;
-			seg = SEGPORT;
 		} else if (seg == SEGSERVER && *p == '/') {
 			*p = '\0';
-			ret->server = estrdup(tmp);
-			tmp = p + 1;
-			seg = SEGTYPE;
-		} else if (seg == SEGPORT && *p == '/') {
-			*p = '\0';
-			ret->port = estrdup(tmp);
+			serv = tmp;
 			tmp = p + 1;
 			seg = SEGTYPE;
 		} else if (seg == SEGTYPE) {
@@ -247,16 +232,26 @@ uritoelem(const char *uri) {
 		}
 	}
 
-	if (!ret->server && seg == SEGSERVER) {
-		ret->server = estrdup(tmp);
-		tmp += strlen(tmp);
-	} else if (!ret->port && seg == SEGPORT) {
-		ret->port = estrdup(tmp);
+	if (!serv && seg == SEGSERVER) {
+		serv = tmp;
 		tmp += strlen(tmp);
 	}
 
-	ret->port     = ret->port     ? ret->port     : estrdup("70");
-	ret->selector = ret->selector ? ret->selector : estrdup(tmp);
+	if (*serv == '[' && (p = strstr(serv + 1, "]:"))) { /* ipv6 + port */
+		*p = '\0';
+		ret->server = estrdup(serv + 1);
+		ret->port = estrdup(p + 2);
+	} else if ((p = strchr(serv, ':')) == strrchr(serv, ':') && p) { /* only one : == ipv4 + port */
+		*p = '\0';
+		ret->server = estrdup(serv);
+		ret->port = estrdup(p + 1);
+	} else { /* no port */
+		ret->server = estrdup(serv);
+		ret->port = estrdup("70");
+	}
+
+	if (!ret->selector)
+		ret->selector = estrdup(tmp);
 
 end:
 	free(dup);
