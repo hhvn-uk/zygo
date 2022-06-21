@@ -29,7 +29,7 @@ include config.mk
 
 $(BIN): $(OBJ)
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $(OBJ)
-	@echo "---> If you see any warnings or weird things happening, read the FAQ in INSTALL <---"
+	@echo "---> If you see any warnings or weird things happening, read the FAQ <---"
 
 $(OBJ): Makefile config.mk zygo.h
 zygo.o: config.h

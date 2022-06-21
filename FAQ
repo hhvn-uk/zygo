@@ -17,6 +17,10 @@ A: It's probably xdg-open's fault. zygo is designed primarily as a browser of
    the same concept. One recommendation I've seen is rifle(1) from the ranger(1)
    file manager. (Writing your own plumber is simple, the uri of the file is
    placed in argv[1] of the plumber).
+   The idea of a plumber comes from plan9:
+   https://en.wikipedia.org/wiki/Plumber_(program)
+   If you were a cgo user, and liked cgo_plumber despite its flaws, you can
+   still use it by installing it and setting it as the plumber in config.h.
 
 Q: Why is it called zygo?
 A: https://en.wikipedia.org/w/index.php?title=Zygogeomys&redirect=no
