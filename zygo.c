@@ -49,7 +49,7 @@ struct {
 			* 2 - yes (id) */
 	wchar_t input[BUFLEN];
 	char cmd;
-	char *arg;
+	char arg[BUFLEN * 4]; /* UTF8 max char size: 4 bytes. 4x sizeof(input) */
 	int search;
 	regex_t regex;
 	int error;
@@ -810,20 +810,18 @@ input(int c) {
 
 	if (!c) {
 		ui.input[il = 0] = '\0';
-		free(ui.arg);
-		ui.arg = estrdup("");
+		ui.arg[0] = '\0';
 		return;
 	} else if (c == KEY_BACKSPACE) {
 		ui.input[--il] = '\0';
+	} else if (il == sizeof(ui.input)) {
+		return;
 	} else {
 		ui.input[il++] = c;
 		ui.input[il] = '\0';
 	}
 
-	free(ui.arg);
-	len = wcstombs(NULL, ui.input, 0) + 1;
-	ui.arg = emalloc(len);
-	wcstombs(ui.arg, ui.input, len);
+	wcstombs(ui.arg, ui.input, sizeof(ui.arg));
 }
 
 char *
