@@ -800,9 +800,26 @@ manpage(void) {
 	draw_bar();
 }
 
+/* 0 - clear
+ * KEY_BACKSPACE - remove character
+ * other - append character */
 void
-syncinput(void) {
-	int len;
+input(int c) {
+	static size_t il = 0;
+	size_t len;
+
+	if (!c) {
+		ui.input[il = 0] = '\0';
+		free(ui.arg);
+		ui.arg = estrdup("");
+		return;
+	} else if (c == KEY_BACKSPACE) {
+		ui.input[--il] = '\0';
+	} else {
+		ui.input[il++] = c;
+		ui.input[il] = '\0';
+	}
+
 	free(ui.arg);
 	len = wcstombs(NULL, ui.input, 0) + 1;
 	ui.arg = emalloc(len);
@@ -813,11 +830,10 @@ char *
 prompt(char *prompt, size_t count) {
 	wint_t c;
 	int ret;
-	size_t il;
 	int y, x;
 
 	attrset(A_NORMAL);
-	ui.input[il = 0] = '\0';
+	input(0);
 	curs_set(1);
 	goto start;
 	while ((ret = get_wch(&c)) != ERR) {
@@ -826,33 +842,30 @@ start:
 			draw_page();
 			move(LINES - 1, 0);
 			clrtoeol();
-			syncinput();
 			printw("%s%s", prompt, ui.arg);
 		} else if (c == 27 /* escape */) {
 			return NULL;
 		} else if (c == '\n') {
 			goto end;
 		} else if (c == KEY_BACKSPACE || c == 127) {
-			if (il != 0) {
+			if (ui.input[0]) {
 				getyx(stdscr, y, x);
 				move(LINES - 1, x - 1);
 				addch(' ');
 				move(LINES - 1, x - 1);
 				refresh();
-				ui.input[--il] = '\0';
+				input(KEY_BACKSPACE);
 			}
 		} else if (c >= 32 && c < KEY_CODE_YES) {
 			addnwstr((wchar_t *)&c, 1);
-			ui.input[il++] = c;
-			ui.input[il] = '\0';
+			input(c);
 		}
 
-		if (count && il == count)
+		if (count && wcslen(ui.input) == count)
 			goto end;
 	}
 
 end:
-	syncinput();
 	return ui.arg;
 }
 
@@ -942,7 +955,6 @@ void
 run(void) {
 	wint_t c;
 	int ret, i;
-	size_t il;
 	Elem *e;
 	char tmperror[BUFLEN];
 
@@ -1023,19 +1035,15 @@ submit:
 				ui.wantinput = 0;
 				draw_page();
 			} else if (c == KEY_BACKSPACE || c == 127) {
-				if ((ui.cmd && il == 0) || (!ui.cmd && il == 1)) {
+				if ((ui.cmd && !ui.input[0]) || (!ui.cmd && !ui.input[1]))
 					ui.wantinput = 0;
-				} else {
-					ui.input[--il] = '\0';
-					syncinput();
-				}
-			} else if (ui.cmd == BIND_YANK && c == BIND_YANK && !il) {
+				else
+					input(KEY_BACKSPACE);
+			} else if (ui.cmd == BIND_YANK && c == BIND_YANK && !ui.input[0]) {
 				ui.wantinput = 0;
 				yank(current);
 			} else if (ui.cmd && acceptkey(ui.cmd, c)) {
-				ui.input[il++] = c;
-				ui.input[il] = '\0';
-				syncinput();
+				input(c);
 				if (wantnum(ui.cmd) && atoi(ui.arg) * 10 > page->lastid)
 					goto submit;
 			}
@@ -1127,10 +1135,8 @@ submit:
 			case '5': case '6': case '7': case '8': case '9':
 				ui.wantinput = 1;
 				ui.cmd = '\0';
-				ui.input[0] = c;
-				ui.input[1] = '\0';
-				syncinput();
-				il = 1;
+				input(0);
+				input(c);
 				if (atoi(ui.arg) * 10 > page->lastid) {
 					idgo(atoi(ui.arg));
 					ui.wantinput = 0;
@@ -1149,9 +1155,7 @@ submit:
 					checkcurrent();
 				ui.cmd = (char)c;
 				ui.wantinput = 1;
-				ui.input[0] = '\0';
-				ui.arg = estrdup("");
-				il = 0;
+				input(0);
 				draw_bar();
 				break;
 			case '\n':

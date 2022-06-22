@@ -99,7 +99,7 @@ void find(int backward);
 int draw_line(Elem *e, int nwidth);
 void draw_page(void);
 void draw_bar(void);
-void syncinput(void);
+void input(int c);
 char *prompt(char *prompt, size_t count);
 Elem *strtolink(char *str);
 void pagescroll(int lines);
