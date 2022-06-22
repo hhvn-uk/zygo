@@ -87,9 +87,29 @@ Program to use for yanking URIs.
 is constantly reading input.
 This input can be either an id to a link
 (seen to the left of a line) or a command.
-If a command requires an argument,
-or the id is ambiguous,
-the user must press enter.
+
+When an id is inputted with no command,
+the link is followed.
+
+If an id needs to be inputted,
+pressing enter is not required as long as the inputted id can be disambiguated.
+For example, if the largest id is
+.Li 27 ,
+and
+.Li 3
+is inputted, it is clear that the link with the id of 3 should be used.
+However, if
+.Li 2
+is inputted, it could refer to any link with an id between 20 and 29,
+so the user must press enter.
+The logic is as follows:
+.Dl if (id * 10 > largest_id_on_page) follow_the_link;
+
+When a command is entered, it may require an argument.
+If so, the character used for the command is shown,
+and the cursor is displayed next to it.
+The argument can either be text, or it can be an id
+(in which case it will follows the rules of the previous paragraph).
 .Sh COMMANDS
 .Bl -tag -width "       "
 .It : Ar uri

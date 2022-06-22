@@ -104,6 +104,8 @@ char *prompt(char *prompt, size_t count);
 Elem *strtolink(char *str);
 void pagescroll(int lines);
 void idgo(size_t id);
+int wantnum(char cmd);
+int acceptkey(char cmd, int key);
 
 /* Main loop */
 void run(void);

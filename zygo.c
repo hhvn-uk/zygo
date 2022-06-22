@@ -923,6 +923,18 @@ idgo(size_t id) {
 		go(list_idget(&page, id), 1, 0);
 }
 
+int
+wantnum(char cmd) {
+	return (!ui.cmd || ui.cmd == BIND_DISPLAY || ui.cmd == BIND_YANK);
+}
+
+int
+acceptkey(char cmd, int key) {
+	if (wantnum(cmd))
+		return isdigit(key);
+	return key >= 32 && key < KEY_CODE_YES;
+}
+
 /*
  * Main loop
  */
@@ -959,6 +971,7 @@ run(void) {
 			if (c == 27 /* escape */) {
 				ui.wantinput = 0;
 			} else if (c == '\n') {
+submit:
 				switch (ui.cmd) {
 				case BIND_URI:
 					e = uritoelem(ui.arg);
@@ -1019,15 +1032,12 @@ run(void) {
 			} else if (ui.cmd == BIND_YANK && c == BIND_YANK && !il) {
 				ui.wantinput = 0;
 				yank(current);
-			} else if (c >= 32 && c < KEY_CODE_YES) {
+			} else if (ui.cmd && acceptkey(ui.cmd, c)) {
 				ui.input[il++] = c;
 				ui.input[il] = '\0';
 				syncinput();
-				if (!ui.cmd && atoi(ui.arg) * 10 > page->lastid) {
-					idgo(atoi(ui.arg));
-					ui.wantinput = 0;
-					draw_page();
-				}
+				if (wantnum(ui.cmd) && atoi(ui.arg) * 10 > page->lastid)
+					goto submit;
 			}
 			draw_bar();
 		} else {
