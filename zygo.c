@@ -959,11 +959,6 @@ run(void) {
 	draw_page();
 	draw_bar();
 
-#define checkcurrent() do {\
-	if (!current || !current->server || !current->port) { \
-		error("%c command can only be used on remote gopher menus", c); \
-		break; \
-	}} while (0)
 
 	/* get_wch does refresh() for us */
 	while ((ret = get_wch(&c)) != ERR) {
@@ -1047,6 +1042,12 @@ submit:
 			}
 			draw_bar();
 		} else {
+			if ((c == BIND_RELOAD || c == BIND_ROOT || c == BIND_APPEND || c == BIND_YANK) &&
+					(!current || !current->server || !current->port)) {
+				error("%c command can only be used on remote gopher menus", c);
+				continue;
+			}
+
 			switch (c) {
 			case KEY_DOWN:
 			case BIND_DOWN:
@@ -1080,7 +1081,6 @@ submit:
 				}
 				break;
 			case BIND_RELOAD:
-				checkcurrent();
 				go(current, 0, 0);
 				draw_page();
 				draw_bar();
@@ -1097,7 +1097,6 @@ submit:
 				draw_page();
 				break;
 			case BIND_ROOT:
-				checkcurrent();
 				e = elem_dup(current);
 				free(e->selector);
 				e->selector = strdup("");
@@ -1149,8 +1148,6 @@ submit:
 			case BIND_SEARCH_BACK:
 			case BIND_APPEND:
 			case BIND_YANK:
-				if (c == BIND_APPEND || c == BIND_YANK)
-					checkcurrent();
 				ui.cmd = (char)c;
 				ui.wantinput = 1;
 				input(0);
@@ -1166,7 +1163,6 @@ submit:
 			}
 		}
 	}
-#undef checkcurrent
 }
 
 void
