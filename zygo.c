@@ -54,12 +54,10 @@ struct {
 	regex_t regex;
 	int error;
 	char errorbuf[BUFLEN];
-	int candraw;
 } ui = {.scroll = 0,
 	.wantinput = 0,
 	.search = 0,
-	.error = 0,
-	.candraw = 1};
+	.error = 0};
 
 /*
  * Memory functions
@@ -715,11 +713,7 @@ draw_page(void) {
 	int nwidth;
 	Elem *e;
 
-	if (!ui.candraw)
-		return;
-
 	attroff(A_COLOR);
-
 	if (page) {
 		if (!current || current->type != '0')
 			nwidth = digits(page->lastid);
@@ -740,9 +734,6 @@ draw_page(void) {
 void
 draw_bar(void) {
 	int savey, savex, x;
-
-	if (!ui.candraw)
-		return;
 
 	move(LINES - 1, 0);
 	clrtoeol();
@@ -959,15 +950,10 @@ run(void) {
 	draw_page();
 	draw_bar();
 
-
 	/* get_wch does refresh() for us */
 	while ((ret = get_wch(&c)) != ERR) {
-		if (!ui.candraw || ui.error) {
-			ui.candraw = 1;
+		if (ui.error && c != KEY_RESIZE)
 			ui.error = 0;
-			draw_page();
-			draw_bar();
-		}
 
 		if (c == KEY_RESIZE) {
 			draw_page();
@@ -990,7 +976,7 @@ submit:
 						clrtoeol();
 						printw("%s", elemtouri(list_idget(&page, atoi(ui.arg))));
 						curs_set(0);
-						ui.candraw = 0;
+						getch(); /* wait */
 					}
 					break;
 				case BIND_SEARCH:
