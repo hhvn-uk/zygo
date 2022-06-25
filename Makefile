@@ -21,7 +21,7 @@ BIN	= zygo
 MAN	= zygo.1
 SRC	+= zygo.c
 OBJ	= $(SRC:.c=.o)
-COMMIT	= $(shell git log HEAD...HEAD~1 --pretty=format:%h)
+COMMIT	= $(shell grep -oE '^.{7}' < .git/refs/heads/master)
 LDFLAGS = -lncursesw
 CFLAGS	= -DCOMMIT=\"$(COMMIT)\"
 
