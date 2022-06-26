@@ -80,9 +80,8 @@ void list_free(Elem **l);
 void list_append(Elem **l, Elem *e);
 Elem *list_get(Elem **l, size_t elem);
 Elem *list_idget(Elem **l, size_t id);
-Elem *list_pop(Elem **l);
+void list_rev(Elem **l);
 size_t list_len(Elem **l);
-
 
 /* Network functions
  * only works with one fd/ctx at 

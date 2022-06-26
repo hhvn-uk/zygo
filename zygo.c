@@ -376,28 +376,29 @@ list_len(Elem **l) {
 	return (*l)->len;
 }
 
-Elem *
-list_pop(Elem **l) {
-	Elem *ret, *p;
+void
+list_rev(Elem **l) {
+	Elem *p, *prev, *next;
+	size_t len, lastid;
 
-	if (!l || !(*l))
-		return NULL;
+	if (!l || !*l)
+		return;
 
-	if ((*l)->len == 1) {
-		ret = (*l);
-		(*l) = NULL;
-	} else {
-		ret = (*l);
-		(*l) = ret->next;
-		(*l)->len = ret->len - 1;
-		if (ret->type != 'i' && ret->type != '3') {
-			for (p = (*l); p; p = p->next)
-				if (p->id)
-					p->id--;
-		} else (*l)->lastid = ret->lastid;
+	len = (*l)->len;
+	lastid = (*l)->lastid;
+
+	for (p = *l, prev = NULL; p; p = next) {
+		next = p->next;
+		p->next = prev;
+		prev = p;
+		if (p->id)
+			p->id = lastid - p->id + 1;
 	}
 
-	return ret;
+	prev->len = len;
+	prev->lastid = lastid;
+
+	*l = prev;
 }
 
 /*
@@ -529,10 +530,10 @@ go(Elem *e, int mhist, int notls) {
 	if (!gotall && dup->type != '0')
 		list_append(&page, &missing);
 
-	if (current && mhist)
-		list_append(&history, current);
 	elem_free(current);
 	current = dup;
+	if (mhist)
+		list_append(&history, current);
 
 	ui.scroll = 0;
 	if (ui.search) {
@@ -1056,14 +1057,17 @@ submit:
 				endwin();
 				exit(EXIT_SUCCESS);
 			case BIND_BACK:
-				if (history) {
-					e = list_pop(&history);
+				if (history && history->next) {
+					for (e = history; e; e = e->next)
+						if (e->next && !e->next->next)
+							break;
 					go(e, 0, 0);
-					free(e);
+					free(e->next);
+					e->next = NULL;
 					draw_page();
 					draw_bar();
 				} else {
-					error("no history");
+					error("no previous history");
 				}
 				break;
 			case BIND_RELOAD:
@@ -1096,17 +1100,15 @@ submit:
 				break;
 			case BIND_HISTORY:
 				if (history) {
-					list_append(&history, current);
 					elem_free(current);
 					current = NULL;
 					list_free(&page);
-					for (i = list_len(&history) - 2; i >= 0; i--) {
-						e = list_get(&history, i);
+					for (e = history; e; e = e->next) {
 						free(e->desc);
 						e->desc = elemtouri(e);
 						list_append(&page, e);
 					}
-					list_append(&page, e);
+					list_rev(&page);
 					draw_bar();
 					draw_page();
 				} else {
