@@ -689,22 +689,19 @@ draw_line(Elem *e, int nwidth) {
 
 	getyx(stdscr, y, x);
 	for (p = mbdesc; *p; p++) {
-		addnwstr(p, 1);
 		x++;
 		if (x == COLS) {
-			if (nwidth) {
-				printw("%1$ *2$s %3$s ", "", nwidth + 6, wrapsep);
-				x = 9 + nwidth;
-			}
-			y++;
+			attron(A_REVERSE);
+			printw("%s", toolong);
+			goto end;
 		}
-		if (y == LINES - 1)
-			break;
+		addnwstr(p, 1);
 	}
 
+	printw("\n");
+end:
 	free(mbdesc);
 	attroff(A_REVERSE);
-	printw("\n");
 	return y + 1;
 }
 
