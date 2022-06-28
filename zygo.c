@@ -1019,7 +1019,7 @@ submit:
 			} else if (ui.cmd == BIND_YANK && c == BIND_YANK && !ui.input[0]) {
 				ui.wantinput = 0;
 				yank(current);
-			} else if (ui.cmd && acceptkey(ui.cmd, c)) {
+			} else if (acceptkey(ui.cmd, c)) {
 				input(c);
 				if (wantnum(ui.cmd) && atoi(ui.arg) * 10 > page->lastid)
 					goto submit;
