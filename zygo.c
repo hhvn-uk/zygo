@@ -689,8 +689,11 @@ draw_line(Elem *e, int nwidth) {
 
 	getyx(stdscr, y, x);
 	for (p = mbdesc; *p; p++) {
-		x++;
-		if (x == COLS) {
+		if (*p == L'\t')
+			x += 8;
+		else
+			x++;
+		if (x >= COLS) {
 			attron(A_REVERSE);
 			printw("%s", toolong);
 			goto end;
