@@ -213,7 +213,7 @@ uritoelem(const char *uri) {
 	for (p = tmp, seg = SEGSERVER; *p; p++) {
 		if (seg == SEGSELECTOR || *p == '\t') {
 			ret->selector = estrdup(p);
-			if (seg = SEGSERVER) {
+			if (seg == SEGSERVER) {
 				*p = '\0';
 				serv = tmp;
 			}
@@ -459,7 +459,7 @@ go(Elem *e, int mhist, int notls) {
 			waitpid(pid, NULL, 0);
 			fprintf(stderr, "Press enter...");
 			fread(&line, sizeof(char), 1, stdin);
-				initscr();
+			initscr();
 		}
 		return -1;
 	}
@@ -798,7 +798,6 @@ manpage(void) {
 void
 input(int c) {
 	static size_t il = 0;
-	size_t len;
 
 	if (!c) {
 		ui.input[il = 0] = '\0';
@@ -820,7 +819,7 @@ char *
 prompt(char *prompt, size_t count) {
 	wint_t c;
 	int ret;
-	int y, x;
+	int x;
 
 	attrset(A_NORMAL);
 	input(0);
@@ -944,7 +943,7 @@ acceptkey(char cmd, int key) {
 void
 run(void) {
 	wint_t c;
-	int ret, i;
+	int ret;
 	Elem *e;
 	char tmperror[BUFLEN];
 
