@@ -819,7 +819,7 @@ char *
 prompt(char *prompt, size_t count) {
 	wint_t c;
 	int ret;
-	int x;
+	int x, y;
 
 	attrset(A_NORMAL);
 	input(0);
