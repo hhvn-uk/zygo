@@ -1230,7 +1230,6 @@ main(int argc, char *argv[]) {
 			}
 		} else {
 			target = uritoelem(argv[argc-1]);
-			go(target, 1, 0);
 		}
 	}
 
@@ -1269,6 +1268,9 @@ main(int argc, char *argv[]) {
 		scheme[i].pair = i + PAIR_SCHEME;
 		init_pair(scheme[i].pair, scheme[i].fg, -1);
 	}
+
+	if (target)
+		go(target, 1, 0);
 
 	run();
 
