@@ -408,14 +408,13 @@ readline(char *buf, size_t count) {
 	size_t i = 0;
 	char c = 0;
 
-	do {
-		if (net_read(&c, sizeof(char)) != sizeof(char))
+	while (i < count && c != '\n') {
+		if (net_read(&c, sizeof(char)) < 1)
 			return 0;
-		if (c != '\r')
-			buf[i++] = c;
-	} while (c != '\n' && i < count);
+		buf[i++] = c;
+	}
 
-	buf[i - 1] = 0;
+	buf[i - 1] = '\0';
 	return 1;
 }
 
@@ -509,9 +508,11 @@ go(Elem *e, int mhist, int notls) {
 
 	list_free(&page);
 	while (readline(line, sizeof(line))) {
-		if (strcmp(line, ".") == 0) {
+		if (strcmp(line, ".\r") == 0) {
 			gotall = 1;
 		} else {
+			if (line[strlen(line) - 1] == '\r')
+				line[strlen(line) - 1] = '\0';
 			if (dup->type == '0')
 				elem = elem_create(0, 'i', line, NULL, NULL, NULL);
 			else
