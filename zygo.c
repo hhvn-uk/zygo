@@ -17,6 +17,7 @@
  *
  */
 
+#define _XOPEN_SOURCE_EXTENDED /* ncurses wchar wants this sometimes */
 #include <ncurses.h>
 #include <stdlib.h>
 #include <string.h>
