@@ -19,6 +19,9 @@
 
 #define BUFLEN 2048
 #define zygo_assert(expr) (expr ? ((void)0) : (endwin(), assert(expr)))
+#define INFO(desc) {0, 'i', desc, NULL, NULL, NULL}
+#define LINK(type, desc, selector, server, port) \
+	{0, type, desc, selector, server, port}
 
 typedef struct Elem Elem;
 struct Elem {

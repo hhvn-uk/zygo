@@ -15,6 +15,17 @@ static short arg_pair[2] = {-1,  0};
 static short err_pair[2] = {160, 0};
 static short eid_pair[2] = {4,   -1};
 
+/* Page shown if zygo is called without any arguments.
+ * This can contain anything you want, really.
+ *
+ * The convenience macros INFO() and LINK() are in zygo.h */
+static Elem start_page[] = {
+	INFO("Welcome to zygo."),
+	LINK('1', " - git repo", "/git/o/zygo", "hhvn.uk", "70"),
+	INFO(""),
+	INFO("Type 'h' to read the man page."),
+};
+
 /* Some bindings are still hardcoded in zygo.c */
 enum Bindings {
 	BIND_URI = ':',

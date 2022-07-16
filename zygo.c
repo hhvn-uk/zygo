@@ -1179,13 +1179,6 @@ main(int argc, char *argv[]) {
 	Elem err = {0, 0, NULL, NULL, NULL, NULL, 0};
 	char *s;
 	int i;
-	Elem start[] = {
-		{0, 'i', "Welcome to zygo."},
-		{0, '1', " - git repo", "/git/o/zygo", "hhvn.uk", "70"},
-		{0, 'i', ""},
-		{0, 'i', "Type 'h' to read the man page."},
-		{0, 'i', NULL},
-	};
 
 	for (i = 1; i < argc; i++) {
 		if ((*argv[i] == '-' && *(argv[i]+1) == '\0') ||
@@ -1252,8 +1245,8 @@ main(int argc, char *argv[]) {
 			list_append(&page, &err);
 		}
 
-		for (i = 0; start[i].desc; i++)
-			list_append(&page, &start[i]);
+		for (i = 0; i < sizeof(start_page) / sizeof(start_page[0]); i++)
+			list_append(&page, &start_page[i]);
 	}
 
 	setlocale(LC_ALL, "");
