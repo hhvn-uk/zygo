@@ -518,7 +518,7 @@ go(Elem *e, int mhist, int notls) {
 			gotall = 1;
 		} else {
 			if (dup->type == '0')
-				elem = elem_create(0, 'i', estrdup(line), NULL, NULL, NULL);
+				elem = elem_create(0, 'i', line, NULL, NULL, NULL);
 			else
 				elem = gophertoelem(dup, line);
 			list_append(&page, elem);
