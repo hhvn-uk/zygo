@@ -187,8 +187,7 @@ uritoelem(const char *uri) {
 	char *tmp = dup;
 	char *serv = NULL;
 	char *p;
-	enum {SEGSERVER, SEGTYPE, SEGSELECTOR};
-	int seg;
+	enum {SEGSERVER, SEGTYPE, SEGSELECTOR} seg;
 
 	ret = elem_create(0, '1', NULL, NULL, NULL, NULL);
 
@@ -263,8 +262,7 @@ gophertoelem(Elem *from, const char *line) {
 	char *dup = estrdup(line);
 	char *tmp = dup;
 	char *p;
-	enum {SEGDESC, SEGSELECTOR, SEGSERVER, SEGPORT};
-	int seg;
+	enum {SEGDESC, SEGSELECTOR, SEGSERVER, SEGPORT} seg;
 
 	ret = elem_create(0, *(tmp++), NULL, NULL, NULL, NULL);
 
