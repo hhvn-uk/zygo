@@ -422,7 +422,7 @@ readline(char *buf, size_t count) {
 int
 go(Elem *e, int mhist, int notls) {
 	char line[BUFLEN];
-	char *sh, *arg, *uri;
+	char *uri;
 	char *pstr;
 	Elem *elem;
 	Elem *dup = elem_dup(e); /* elem may be part of page */
@@ -436,11 +436,6 @@ go(Elem *e, int mhist, int notls) {
 	if (dup->type != '0' && dup->type != '1' && dup->type != '7' && dup->type != '+') {
 		/* call mario */
 		uri = elemtouri(e);
-		arg = emalloc(strlen(plumber) + strlen(uri) + 2);
-		snprintf(arg, strlen(plumber) + strlen(uri) + 2, "%s %s", plumber, uri);
-
-		sh = getenv("SHELL");
-		sh = sh ? sh : "/bin/sh";
 
 		if (!parallelplumb)
 			endwin();
@@ -450,7 +445,7 @@ go(Elem *e, int mhist, int notls) {
 				close(1);
 				close(2);
 			}
-			execl(sh, sh, "-c", arg, NULL);
+			execlp(plumber, plumber, uri, NULL);
 		}
 		zygo_assert(pid != -1);
 
@@ -769,16 +764,12 @@ manpage(void) {
 	pid_t pid;
 	int status;
 	char buf;
-	char *sh;
 
 	endwin();
 
-	sh = getenv("SHELL");
-	sh = sh ? sh : "/bin/sh";
-
 	pid = fork();
 	if (pid == 0)
-		execlp(sh, sh, "-c", "man zygo", NULL);
+		execlp("man", "man", "zygo", NULL);
 	assert(pid != -1);
 	waitpid(pid, &status, 0);
 	if (WEXITSTATUS(status) != 0) {
@@ -879,16 +870,13 @@ yank(Elem *e) {
 	zygo_assert(pipe(pfd) != -1);
 	zygo_assert((pid = fork()) != -1);
 
-	sh = getenv("SHELL");
-	sh = sh ? sh : "/bin/sh";
-
 	if (pid == 0) {
 		close(0);
 		close(1);
 		close(2);
 		close(pfd[1]);
 		dup2(pfd[0], 0);
-		execl(sh, sh, "-c", yanker, NULL);
+		execlp(yanker, yanker, NULL);
 	}
 
 	close(pfd[0]);
