@@ -35,6 +35,7 @@ enum Bindings {
 	BIND_APPEND = 'a',
 	BIND_YANK = 'y',
 	BIND_DOWN = 'j',
+	BIND_UP = 'k',
 	BIND_QUIT = 'q',
 	BIND_BACK = '<',
 	BIND_RELOAD = '*',

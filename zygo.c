@@ -1032,7 +1032,7 @@ submit:
 				pagescroll((int)(LINES / 2));
 				break;
 			case KEY_UP:
-			case 'k':
+			case BIND_UP:
 				pagescroll(-1);
 				break;
 			case 21: /* ^U */
